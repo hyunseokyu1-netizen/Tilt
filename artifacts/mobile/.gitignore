@@ -40,6 +40,4 @@ yarn-error.*
 
 .env
 
-# Replit
-.replit-artifact/
 static-build/

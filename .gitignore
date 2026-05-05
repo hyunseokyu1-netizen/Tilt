@@ -12,5 +12,4 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
-.replit-artifact/
 static-build/
