@@ -39,3 +39,7 @@ yarn-error.*
 .vercel
 
 .env
+
+# Replit
+.replit-artifact/
+static-build/

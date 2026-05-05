@@ -1,11 +1,12 @@
 {
   "expo": {
     "name": "Tilt",
-    "slug": "mobile",
+    "slug": "tilt",
+    "owner": "hyunseokyu1-netizen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "tilt",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -14,21 +15,18 @@
       "backgroundColor": "#0B1622"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hyunseokyu.tilt"
     },
     "android": {
-      "backgroundColor": "#0B1622"
+      "backgroundColor": "#0B1622",
+      "package": "com.hyunseokyu.tilt"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
+      "expo-router",
       "expo-font",
       "expo-web-browser"
     ],
