@@ -60,6 +60,9 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "expo-sensors": "^15.0.8"
+    "expo-sensors": "^15.0.8",
+    "expo": "~54.0.34",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }
