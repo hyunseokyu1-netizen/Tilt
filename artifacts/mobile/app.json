@@ -20,11 +20,7 @@
     },
     "android": {
       "backgroundColor": "#0B1622",
-      "package": "com.hyunseokyu.tilt",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0B1622"
-      }
+      "package": "com.hyunseokyu.tilt"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
