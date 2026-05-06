@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer, type AudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 import React, {
   createContext,
   useCallback,
@@ -87,6 +88,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [isNewBest, setIsNewBest] = useState(false);
   const [flashIndex, setFlashIndex] = useState<number | null>(null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useKeepAwake();
 
   const tickPlayer = useAudioPlayer(TICK_SOUND);
   const bumpPlayer = useAudioPlayer(BUMP_SOUND);
