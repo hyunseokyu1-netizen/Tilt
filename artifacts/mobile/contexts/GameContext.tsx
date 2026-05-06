@@ -252,8 +252,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           const THRESHOLD = 0.35;
           let dir: "up" | "down" | "left" | "right" | null = null;
           if (Math.abs(x) > Math.abs(y)) {
-            if (x > THRESHOLD) dir = "right";
-            else if (x < -THRESHOLD) dir = "left";
+            if (x > THRESHOLD) dir = "left";
+            else if (x < -THRESHOLD) dir = "right";
           } else {
             if (y > THRESHOLD) dir = "down";
             else if (y < -THRESHOLD) dir = "up";
