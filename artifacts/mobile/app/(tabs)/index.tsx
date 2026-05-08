@@ -1,11 +1,13 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -87,6 +89,9 @@ function IdleOverlay() {
         <Text style={overlayStyles.desc}>
           Reach the glowing cell before time runs out
         </Text>
+        <View style={overlayStyles.coordHintRow}>
+          <Text style={overlayStyles.coordHintText}>Grid: A1–C3  ·  Audio guided</Text>
+        </View>
         {highScore > 0 && (
           <View style={overlayStyles.highScoreBox}>
             <Text style={overlayStyles.highScoreLabel}>BEST</Text>
@@ -109,7 +114,27 @@ function IdleOverlay() {
 }
 
 function GameOverOverlay() {
-  const { score, restartGame, highScore, isNewBest } = useGame();
+  const {
+    score,
+    restartGame,
+    highScore,
+    isNewBest,
+    rankInfo,
+    isSubmittingRank,
+    submitScore,
+    currentCoord,
+    targetCoord,
+  } = useGame();
+  const [name, setName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await submitScore(trimmed);
+    setSubmitted(true);
+  };
+
   return (
     <View style={overlayStyles.container}>
       <View style={overlayStyles.box}>
@@ -124,6 +149,56 @@ function GameOverOverlay() {
         {highScore > 0 && (
           <Text style={overlayStyles.bestScoreText}>BEST: {highScore}</Text>
         )}
+
+        {/* Last position info */}
+        <View style={overlayStyles.coordRow}>
+          <Text style={overlayStyles.coordChip}>{currentCoord}</Text>
+          <Text style={overlayStyles.coordArrow}>→</Text>
+          <Text style={[overlayStyles.coordChip, overlayStyles.coordTarget]}>
+            {targetCoord}
+          </Text>
+        </View>
+
+        {/* Global ranking */}
+        {rankInfo && (
+          <View style={overlayStyles.rankBox}>
+            <Text style={overlayStyles.rankText}>
+              GLOBAL RANK #{rankInfo.rank}
+            </Text>
+            {rankInfo.qualifies && !submitted ? (
+              <>
+                <TextInput
+                  style={overlayStyles.nameInput}
+                  placeholder="Enter your name"
+                  placeholderTextColor="#3A7AB5"
+                  value={name}
+                  onChangeText={setName}
+                  maxLength={20}
+                  autoCapitalize="words"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
+                />
+                <Pressable
+                  style={[
+                    overlayStyles.submitBtn,
+                    (!name.trim() || isSubmittingRank) && overlayStyles.submitBtnDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={!name.trim() || isSubmittingRank}
+                >
+                  {isSubmittingRank ? (
+                    <ActivityIndicator size="small" color="#0B1622" />
+                  ) : (
+                    <Text style={overlayStyles.submitBtnText}>SAVE SCORE</Text>
+                  )}
+                </Pressable>
+              </>
+            ) : submitted ? (
+              <Text style={overlayStyles.savedText}>Score saved!</Text>
+            ) : null}
+          </View>
+        )}
+
         <Pressable style={overlayStyles.btn} onPress={restartGame}>
           <Text style={overlayStyles.btnText}>PLAY AGAIN</Text>
         </Pressable>
@@ -143,6 +218,8 @@ export default function GameScreen() {
     timeLeft,
     maxTime,
     flashIndex,
+    currentCoord,
+    targetCoord,
     restartGame,
   } = useGame();
 
@@ -176,16 +253,18 @@ export default function GameScreen() {
         <Grid playerIndex={playerIndex} targetIndex={targetIndex} flashIndex={flashIndex} />
       </View>
 
-      {/* Instruction text */}
+      {/* Coordinate display + instruction */}
       {phase === "playing" && (
-        <View style={styles.instrRow}>
-          <Feather name="smartphone" size={14} color="#1A5F8A" />
-          <Text style={styles.instrText}>
-            {Platform.OS === "web"
-              ? "USE ARROWS TO GUIDE THE DOT"
-              : "TILT THE PHONE TO GUIDE THE DOT"}
-          </Text>
-          <Feather name="smartphone" size={14} color="#1A5F8A" />
+        <View style={styles.coordBar}>
+          <View style={styles.coordBarItem}>
+            <Text style={styles.coordBarLabel}>NOW</Text>
+            <Text style={styles.coordBarValue}>{currentCoord}</Text>
+          </View>
+          <Feather name="arrow-right" size={14} color="#1A5F8A" />
+          <View style={styles.coordBarItem}>
+            <Text style={styles.coordBarLabel}>TARGET</Text>
+            <Text style={[styles.coordBarValue, { color: "#00FFB3" }]}>{targetCoord}</Text>
+          </View>
         </View>
       )}
 
@@ -265,6 +344,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 2,
+  },
+  coordBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  coordBarItem: {
+    alignItems: "center",
+  },
+  coordBarLabel: {
+    color: "#1A5F8A",
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 2,
+  },
+  coordBarValue: {
+    color: "#5A8AB5",
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1,
   },
 });
 
@@ -433,6 +533,88 @@ const overlayStyles = StyleSheet.create({
     color: "#FFD700",
     fontSize: 28,
     fontFamily: "Inter_700Bold",
+  },
+  coordHintRow: {
+    marginBottom: 16,
+  },
+  coordHintText: {
+    color: "#2A5A8A",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 1.5,
+  },
+  coordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  coordChip: {
+    color: "#5A8AB5",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    backgroundColor: "#0A1929",
+    borderWidth: 1,
+    borderColor: "#1A3A5C",
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    letterSpacing: 1,
+  },
+  coordTarget: {
+    color: "#00FFB3",
+    borderColor: "#00FFB3",
+  },
+  coordArrow: {
+    color: "#3A7AB5",
+    fontSize: 14,
+  },
+  rankBox: {
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 8,
+  },
+  rankText: {
+    color: "#FFD700",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 2,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderColor: "#1A5F8A",
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    width: 220,
+    textAlign: "center",
+    backgroundColor: "#0A1929",
+  },
+  submitBtn: {
+    backgroundColor: "#00C4FF",
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    minWidth: 140,
+    alignItems: "center",
+  },
+  submitBtnDisabled: {
+    opacity: 0.45,
+  },
+  submitBtnText: {
+    color: "#0B1622",
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 2,
+  },
+  savedText: {
+    color: "#00FFB3",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 1.5,
   },
 });
 

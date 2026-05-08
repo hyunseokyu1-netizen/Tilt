@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAudioPlayer, type AudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import * as Speech from "expo-speech";
 import React, {
   createContext,
   useCallback,
@@ -11,6 +12,9 @@ import React, {
   useState,
 } from "react";
 import { Platform } from "react-native";
+
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { indexToCoord } from "../utils/coords";
 
 const TICK_SOUND = require("../assets/sounds/tick.wav");
 const BUMP_SOUND = require("../assets/sounds/bump.wav");
@@ -28,6 +32,11 @@ function playSound(player: AudioPlayer | null) {
 
 export type Phase = "idle" | "playing" | "gameover";
 
+export interface RankInfo {
+  rank: number;
+  qualifies: boolean; // true if rank <= 1000
+}
+
 const HIGH_SCORE_KEY = "@tilt_high_score";
 
 export interface GameContextType {
@@ -42,9 +51,14 @@ export interface GameContextType {
   highScore: number;
   isNewBest: boolean;
   flashIndex: number | null;
+  currentCoord: string;
+  targetCoord: string;
+  rankInfo: RankInfo | null;
+  isSubmittingRank: boolean;
   startGame: () => void;
   restartGame: () => void;
   movePlayer: (dir: "up" | "down" | "left" | "right") => void;
+  submitScore: (name: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -53,6 +67,10 @@ const INITIAL_MAX_TIME = 5000;
 const MIN_MAX_TIME = 1200;
 const TIME_REDUCTION = 200;
 const MOVE_COOLDOWN = 380;
+
+// Metronome: 60 BPM at full time → 180 BPM at 0 time
+const METRO_BPM_MIN = 60;
+const METRO_BPM_MAX = 180;
 
 function randomTarget(exclude: number): number {
   let t: number;
@@ -75,6 +93,14 @@ function canMove(
   return null;
 }
 
+function speakPosition(playerIdx: number, targetIdx: number) {
+  Speech.stop();
+  Speech.speak(`${indexToCoord(playerIdx)} to ${indexToCoord(targetIdx)}`, {
+    language: "en-US",
+    rate: 1.1,
+  });
+}
+
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [playerIndex, setPlayerIndex] = useState(4);
@@ -87,6 +113,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [highScore, setHighScore] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [flashIndex, setFlashIndex] = useState<number | null>(null);
+  const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
+  const [isSubmittingRank, setIsSubmittingRank] = useState(false);
+
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useKeepAwake();
@@ -94,6 +123,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const tickPlayer = useAudioPlayer(TICK_SOUND);
   const bumpPlayer = useAudioPlayer(BUMP_SOUND);
   const clearPlayer = useAudioPlayer(CLEAR_SOUND);
+  const metronomePlayer = useAudioPlayer(TICK_SOUND);
 
   useEffect(() => {
     AsyncStorage.getItem(HIGH_SCORE_KEY).then((val) => {
@@ -116,13 +146,53 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const roundRef = useRef(round);
   const maxTimeRef = useRef(maxTime);
   const lastMoveRef = useRef(0);
-  const lastHapticRef = useRef(0);
+  const nextMetronomeTickRef = useRef(0);
+  // score ref for ranking fetch
+  const scoreRef = useRef(score);
 
   phaseRef.current = phase;
   playerRef.current = playerIndex;
   targetRef.current = targetIndex;
   roundRef.current = round;
   maxTimeRef.current = maxTime;
+  scoreRef.current = score;
+
+  // Fetch global rank when game over
+  useEffect(() => {
+    if (phase !== "gameover") return;
+    setRankInfo(null);
+
+    const finalScore = scoreRef.current;
+    if (finalScore === 0 || !isSupabaseConfigured || !supabase) return;
+
+    (async () => {
+      try {
+        const { count, error } = await supabase
+          .from("rankings")
+          .select("*", { count: "exact", head: true })
+          .gt("score", finalScore);
+
+        if (error) return;
+        const rank = (count ?? 0) + 1;
+        setRankInfo({ rank, qualifies: rank <= 1000 });
+      } catch {
+        // ranking fetch is non-critical
+      }
+    })();
+  }, [phase]);
+
+  const submitScore = useCallback(async (name: string) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    setIsSubmittingRank(true);
+    try {
+      await supabase.from("rankings").insert({
+        player_name: name.trim(),
+        score: scoreRef.current,
+      });
+    } finally {
+      setIsSubmittingRank(false);
+    }
+  }, []);
 
   const handleReach = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -148,6 +218,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     targetRef.current = newTarget;
     roundRef.current = newRound;
     maxTimeRef.current = newMaxTime;
+    nextMetronomeTickRef.current = 0;
+    // Announce new position after reaching target
+    speakPosition(playerRef.current, newTarget);
   }, [clearPlayer]);
 
   const movePlayer = useCallback(
@@ -184,6 +257,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTimeLeft(INITIAL_MAX_TIME);
     setIsNewBest(false);
     setFlashIndex(null);
+    setRankInfo(null);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -192,7 +266,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     targetRef.current = target;
     roundRef.current = 0;
     maxTimeRef.current = INITIAL_MAX_TIME;
-    lastHapticRef.current = 0;
+    nextMetronomeTickRef.current = 0;
+    // Announce starting position
+    speakPosition(4, target);
   }, []);
 
   const restartGame = useCallback(() => {
@@ -200,7 +276,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     startGame();
   }, [startGame]);
 
-  // Timer
+  // Timer + metronome
   useEffect(() => {
     if (phase !== "playing") return;
     const interval = setInterval(() => {
@@ -224,22 +300,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return 0;
         }
+
         const next = prev - 100;
-        // Dynamic haptic tick
-        const tickInterval = Math.max(
-          150,
-          (prev / maxTimeRef.current) * 650 + 150
-        );
+
+        // Metronome: BPM scales from 60 (full time) to 180 (near 0)
+        const progress = 1 - next / maxTimeRef.current;
+        const bpm = METRO_BPM_MIN + progress * (METRO_BPM_MAX - METRO_BPM_MIN);
+        const metroInterval = Math.floor(60000 / bpm);
         const now = Date.now();
-        if (now - lastHapticRef.current >= tickInterval) {
-          lastHapticRef.current = now;
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (now >= nextMetronomeTickRef.current) {
+          nextMetronomeTickRef.current = now + metroInterval;
+          playSound(metronomePlayer);
         }
+
         return next;
       });
     }, 100);
     return () => clearInterval(interval);
-  }, [phase, score]);
+  }, [phase, score, metronomePlayer]);
 
   // Accelerometer
   useEffect(() => {
@@ -277,6 +355,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
   }, [phase, movePlayer]);
 
+  const currentCoord = indexToCoord(playerIndex);
+  const targetCoord = indexToCoord(targetIndex);
+
   return (
     <GameContext.Provider
       value={{
@@ -291,9 +372,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         highScore,
         isNewBest,
         flashIndex,
+        currentCoord,
+        targetCoord,
+        rankInfo,
+        isSubmittingRank,
         startGame,
         restartGame,
         movePlayer,
+        submitScore,
       }}
     >
       {children}

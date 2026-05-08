@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Dimensions, StyleSheet, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
+
+import { indexToCoord } from "@/utils/coords";
 
 interface GridProps {
   playerIndex: number;
@@ -146,6 +148,9 @@ function Cell({
       <FlashOverlay active={isFlash} />
       {isTarget && <TargetCell pulse={pulseAnim} />}
       {isTarget && <Chevrons pulse={pulseAnim} />}
+      <Text style={[styles.coordLabel, (isPlayer || isTarget) && styles.coordLabelActive]}>
+        {indexToCoord(index)}
+      </Text>
       {isPlayer && (
         <Animated.View
           style={[
@@ -297,6 +302,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 4,
     zIndex: 10,
+  },
+  coordLabel: {
+    position: "absolute",
+    top: 4,
+    left: 5,
+    fontSize: 9,
+    fontWeight: "600",
+    color: "rgba(58, 122, 181, 0.45)",
+    letterSpacing: 0.5,
+  },
+  coordLabelActive: {
+    color: "rgba(0, 255, 136, 0.7)",
   },
   chevronsWrap: {
     position: "absolute",
