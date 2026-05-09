@@ -37,6 +37,11 @@ export interface RankInfo {
   qualifies: boolean; // true if rank <= 1000
 }
 
+export interface RankingEntry {
+  player_name: string;
+  score: number;
+}
+
 const HIGH_SCORE_KEY = "@tilt_high_score";
 
 export interface GameContextType {
@@ -54,6 +59,7 @@ export interface GameContextType {
   currentCoord: string;
   targetCoord: string;
   rankInfo: RankInfo | null;
+  topRankings: RankingEntry[];
   isSubmittingRank: boolean;
   startGame: () => void;
   restartGame: () => void;
@@ -114,6 +120,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [isNewBest, setIsNewBest] = useState(false);
   const [flashIndex, setFlashIndex] = useState<number | null>(null);
   const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
+  const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,29 +164,38 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   maxTimeRef.current = maxTime;
   scoreRef.current = score;
 
-  // Fetch global rank when game over
+  const fetchRankings = useCallback(async (finalScore: number) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const [rankResult, top5Result] = await Promise.all([
+        supabase
+          .from("rankings")
+          .select("*", { count: "exact", head: true })
+          .gt("score", finalScore),
+        supabase
+          .from("rankings")
+          .select("player_name, score")
+          .order("score", { ascending: false })
+          .limit(5),
+      ]);
+      const rank = (rankResult.count ?? 0) + 1;
+      setRankInfo({ rank, qualifies: rank <= 1000 });
+      setTopRankings(top5Result.data ?? []);
+    } catch {
+      // ranking fetch is non-critical
+    }
+  }, []);
+
+  // Fetch global rank + top 5 when game over
   useEffect(() => {
     if (phase !== "gameover") return;
     setRankInfo(null);
+    setTopRankings([]);
 
     const finalScore = scoreRef.current;
-    if (finalScore === 0 || !isSupabaseConfigured || !supabase) return;
-
-    (async () => {
-      try {
-        const { count, error } = await supabase
-          .from("rankings")
-          .select("*", { count: "exact", head: true })
-          .gt("score", finalScore);
-
-        if (error) return;
-        const rank = (count ?? 0) + 1;
-        setRankInfo({ rank, qualifies: rank <= 1000 });
-      } catch {
-        // ranking fetch is non-critical
-      }
-    })();
-  }, [phase]);
+    if (finalScore === 0) return;
+    fetchRankings(finalScore);
+  }, [phase, fetchRankings]);
 
   const submitScore = useCallback(async (name: string) => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -189,6 +205,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         player_name: name.trim(),
         score: scoreRef.current,
       });
+      // Refresh top 5 after submission
+      const { data } = await supabase
+        .from("rankings")
+        .select("player_name, score")
+        .order("score", { ascending: false })
+        .limit(5);
+      setTopRankings(data ?? []);
     } finally {
       setIsSubmittingRank(false);
     }
@@ -258,6 +281,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsNewBest(false);
     setFlashIndex(null);
     setRankInfo(null);
+    setTopRankings([]);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -375,6 +399,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         currentCoord,
         targetCoord,
         rankInfo,
+        topRankings,
         isSubmittingRank,
         startGame,
         restartGame,

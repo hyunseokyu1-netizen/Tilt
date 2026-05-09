@@ -5,6 +5,7 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -113,96 +114,184 @@ function IdleOverlay() {
   );
 }
 
+function LeaderboardRow({
+  rank,
+  name,
+  score,
+  highlight,
+}: {
+  rank: number;
+  name: string;
+  score: number;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={[lbStyles.row, highlight && lbStyles.rowHighlight]}>
+      <Text style={[lbStyles.rank, highlight && lbStyles.textHighlight]}>
+        #{rank}
+      </Text>
+      <Text
+        style={[lbStyles.name, highlight && lbStyles.textHighlight]}
+        numberOfLines={1}
+      >
+        {name}
+      </Text>
+      <Text style={[lbStyles.score, highlight && lbStyles.scoreHighlight]}>
+        {score}
+      </Text>
+    </View>
+  );
+}
+
 function GameOverOverlay() {
   const {
     score,
     restartGame,
-    highScore,
     isNewBest,
     rankInfo,
+    topRankings,
     isSubmittingRank,
     submitScore,
-    currentCoord,
-    targetCoord,
   } = useGame();
   const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submittedName, setSubmittedName] = useState("");
 
   const handleSubmit = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     await submitScore(trimmed);
+    setSubmittedName(trimmed);
     setSubmitted(true);
   };
 
+  const userInTop5 =
+    submitted &&
+    rankInfo &&
+    rankInfo.rank <= 5 &&
+    topRankings.some(
+      (r) => r.player_name === submittedName && r.score === score
+    );
+
   return (
     <View style={overlayStyles.container}>
-      <View style={overlayStyles.box}>
+      <ScrollView
+        contentContainerStyle={overlayStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
         <Text style={overlayStyles.gameOverLabel}>TIME UP</Text>
-        {isNewBest && (
-          <Text style={overlayStyles.newBestLabel}>NEW BEST!</Text>
-        )}
-        <Text style={overlayStyles.finalScore}>{score}</Text>
-        <Text style={overlayStyles.finalScoreLabel}>
-          {score === 1 ? "cell reached" : "cells reached"}
-        </Text>
-        {highScore > 0 && (
-          <Text style={overlayStyles.bestScoreText}>BEST: {highScore}</Text>
-        )}
-
-        {/* Last position info */}
-        <View style={overlayStyles.coordRow}>
-          <Text style={overlayStyles.coordChip}>{currentCoord}</Text>
-          <Text style={overlayStyles.coordArrow}>→</Text>
-          <Text style={[overlayStyles.coordChip, overlayStyles.coordTarget]}>
-            {targetCoord}
+        {isNewBest && <Text style={overlayStyles.newBestLabel}>NEW BEST!</Text>}
+        <View style={overlayStyles.scoreRow}>
+          <Text style={overlayStyles.finalScore}>{score}</Text>
+          <Text style={overlayStyles.finalScoreUnit}>
+            {score === 1 ? "cell" : "cells"}
           </Text>
         </View>
 
-        {/* Global ranking */}
-        {rankInfo && (
-          <View style={overlayStyles.rankBox}>
+        {/* Name input — shown before submission if qualifies */}
+        {rankInfo?.qualifies && !submitted && (
+          <View style={overlayStyles.inputBox}>
             <Text style={overlayStyles.rankText}>
               GLOBAL RANK #{rankInfo.rank}
             </Text>
-            {rankInfo.qualifies && !submitted ? (
-              <>
-                <TextInput
-                  style={overlayStyles.nameInput}
-                  placeholder="Enter your name"
-                  placeholderTextColor="#3A7AB5"
-                  value={name}
-                  onChangeText={setName}
-                  maxLength={20}
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
-                />
-                <Pressable
-                  style={[
-                    overlayStyles.submitBtn,
-                    (!name.trim() || isSubmittingRank) && overlayStyles.submitBtnDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={!name.trim() || isSubmittingRank}
-                >
-                  {isSubmittingRank ? (
-                    <ActivityIndicator size="small" color="#0B1622" />
-                  ) : (
-                    <Text style={overlayStyles.submitBtnText}>SAVE SCORE</Text>
-                  )}
-                </Pressable>
-              </>
-            ) : submitted ? (
-              <Text style={overlayStyles.savedText}>Score saved!</Text>
-            ) : null}
+            <Text style={overlayStyles.inputLabel}>이름을 입력하세요</Text>
+            <TextInput
+              style={overlayStyles.nameInput}
+              placeholder="Your name"
+              placeholderTextColor="#3A7AB5"
+              value={name}
+              onChangeText={setName}
+              maxLength={20}
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+            <Pressable
+              style={[
+                overlayStyles.submitBtn,
+                (!name.trim() || isSubmittingRank) &&
+                  overlayStyles.submitBtnDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={!name.trim() || isSubmittingRank}
+            >
+              {isSubmittingRank ? (
+                <ActivityIndicator size="small" color="#0B1622" />
+              ) : (
+                <Text style={overlayStyles.submitBtnText}>SAVE SCORE</Text>
+              )}
+            </Pressable>
           </View>
+        )}
+
+        {/* Leaderboard */}
+        {topRankings.length > 0 && (
+          <View style={lbStyles.container}>
+            <Text style={lbStyles.title}>LEADERBOARD</Text>
+            {topRankings.map((entry, i) => {
+              const isMe =
+                submitted &&
+                entry.player_name === submittedName &&
+                entry.score === score;
+              return (
+                <LeaderboardRow
+                  key={i}
+                  rank={i + 1}
+                  name={isMe ? `${entry.player_name} ★` : entry.player_name}
+                  score={entry.score}
+                  highlight={isMe}
+                />
+              );
+            })}
+
+            {/* User's rank if outside top 5 */}
+            {submitted && !userInTop5 && rankInfo && (
+              <>
+                <Text style={lbStyles.ellipsis}>· · ·</Text>
+                <LeaderboardRow
+                  rank={rankInfo.rank}
+                  name={`${submittedName} ★`}
+                  score={score}
+                  highlight
+                />
+              </>
+            )}
+
+            {/* Not submitted yet — show rank without name */}
+            {!submitted && rankInfo && rankInfo.rank > 5 && (
+              <>
+                <Text style={lbStyles.ellipsis}>· · ·</Text>
+                <View style={[lbStyles.row, lbStyles.rowHighlight]}>
+                  <Text style={[lbStyles.rank, lbStyles.textHighlight]}>
+                    #{rankInfo.rank}
+                  </Text>
+                  <Text style={[lbStyles.name, lbStyles.textHighlight]}>
+                    —
+                  </Text>
+                  <Text style={[lbStyles.score, lbStyles.scoreHighlight]}>
+                    {score}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Loading state */}
+        {!topRankings.length && !rankInfo && score > 0 && (
+          <ActivityIndicator
+            size="small"
+            color="#3A7AB5"
+            style={{ marginVertical: 16 }}
+          />
         )}
 
         <Pressable style={overlayStyles.btn} onPress={restartGame}>
           <Text style={overlayStyles.btnText}>PLAY AGAIN</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -421,10 +510,42 @@ const overlayStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scrollContent: {
+    alignItems: "center",
+    paddingHorizontal: 28,
+    paddingVertical: 32,
+    width: SW,
+    maxWidth: 400,
+  },
   box: {
     alignItems: "center",
     paddingHorizontal: 32,
     maxWidth: 320,
+  },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    marginBottom: 4,
+  },
+  finalScoreUnit: {
+    color: "#3A7AB5",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 1,
+    marginBottom: 14,
+  },
+  inputBox: {
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+    width: "100%",
+  },
+  inputLabel: {
+    color: "#5A8AB5",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    letterSpacing: 1,
   },
   titleRow: {
     flexDirection: "row",
@@ -615,6 +736,67 @@ const overlayStyles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 1.5,
+  },
+});
+
+const lbStyles = StyleSheet.create({
+  container: {
+    width: "100%",
+    marginBottom: 16,
+  },
+  title: {
+    color: "#3A7AB5",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 3,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginBottom: 4,
+    backgroundColor: "#0A1929",
+  },
+  rowHighlight: {
+    backgroundColor: "rgba(0,255,179,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(0,255,179,0.25)",
+  },
+  rank: {
+    width: 36,
+    color: "#3A7AB5",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  name: {
+    flex: 1,
+    color: "#8AB5D5",
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  score: {
+    color: "#FFD700",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    minWidth: 30,
+    textAlign: "right",
+  },
+  textHighlight: {
+    color: "#00FFB3",
+  },
+  scoreHighlight: {
+    color: "#00FFB3",
+  },
+  ellipsis: {
+    color: "#1A3A5C",
+    textAlign: "center",
+    fontSize: 14,
+    letterSpacing: 4,
+    marginVertical: 4,
   },
 });
 
