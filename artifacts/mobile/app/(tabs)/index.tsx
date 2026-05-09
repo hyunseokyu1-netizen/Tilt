@@ -112,7 +112,7 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
         {loading ? (
           <ActivityIndicator size="large" color="#3A7AB5" style={{ marginTop: 32 }} />
         ) : entries.length === 0 ? (
-          <Text style={overlayStyles.emptyText}>아직 기록이 없습니다</Text>
+          <Text style={overlayStyles.emptyText}>No records yet</Text>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }}>
             {entries.map((entry) => (
@@ -184,7 +184,7 @@ function IdleOverlay() {
             size={14}
             color={ttsEnabled ? "#00FFB3" : "#3A7AB5"}
           />
-          <Text style={overlayStyles.ttsLabel}>위치 음성 안내</Text>
+          <Text style={overlayStyles.ttsLabel}>Audio Guidance</Text>
           <Switch
             value={ttsEnabled}
             onValueChange={setTtsEnabled}
@@ -281,7 +281,7 @@ function GameOverOverlay() {
             <Text style={overlayStyles.rankText}>
               GLOBAL RANK #{rankInfo.rank}
             </Text>
-            <Text style={overlayStyles.inputLabel}>이름을 입력하세요</Text>
+            <Text style={overlayStyles.inputLabel}>Enter your name</Text>
             <TextInput
               style={overlayStyles.nameInput}
               placeholder="Your name"
@@ -364,7 +364,7 @@ function GameOverOverlay() {
                           isMe
                             ? `${entry.player_name} ★`
                             : isMyRank
-                            ? "— (나)"
+                            ? "— (me)"
                             : entry.player_name
                         }
                         score={entry.score}
