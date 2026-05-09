@@ -15,6 +15,7 @@ import { Platform } from "react-native";
 
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { indexToCoord } from "../utils/coords";
+import { applyDenseRank } from "../utils/ranking";
 
 const TICK_SOUND = require("../assets/sounds/tick.wav");
 const BUMP_SOUND = require("../assets/sounds/bump.wav");
@@ -187,35 +188,38 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const fetchRankings = useCallback(async (finalScore: number) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      const [rankResult, top5Result] = await Promise.all([
-        supabase
-          .from("rankings")
-          .select("*", { count: "exact", head: true })
-          .gt("score", finalScore),
+      // Fetch top 5 + all scores above user in parallel
+      const [top5Result, higherResult] = await Promise.all([
         supabase
           .from("rankings")
           .select("player_name, score")
           .order("score", { ascending: false })
           .limit(5),
+        supabase
+          .from("rankings")
+          .select("score")
+          .gt("score", finalScore),
       ]);
 
-      const rank = (rankResult.count ?? 0) + 1;
-      setRankInfo({ rank, qualifies: rank <= 1000 });
-      setTopRankings(
-        (top5Result.data ?? []).map((e, i) => ({ ...e, rank: i + 1 }))
-      );
+      // DENSE_RANK: count distinct scores above user
+      const higherScores = higherResult.data ?? [];
+      const denseRank = new Set(higherScores.map((r) => r.score)).size + 1;
+      // Qualification uses total player count (not dense rank)
+      const totalAbove = higherScores.length;
+      setRankInfo({ rank: denseRank, qualifies: totalAbove < 1000 });
 
-      // Fetch window around user's rank: [rank-3 .. rank+3]
-      if (rank > 5) {
-        const offset = Math.max(0, rank - 4); // 0-indexed → gives rank-3 at minimum
+      // Apply DENSE_RANK to top 5
+      setTopRankings(applyDenseRank(top5Result.data ?? []));
+
+      // Fetch window around user's row using COUNT-based offset
+      if (denseRank > 5) {
+        const offset = Math.max(0, totalAbove - 3);
         const { data } = await supabase
           .from("rankings")
           .select("player_name, score")
           .order("score", { ascending: false })
           .range(offset, offset + 6);
-        setNearbyRankings(
-          (data ?? []).map((e, i) => ({ ...e, rank: offset + i + 1 }))
-        );
+        setNearbyRankings(applyDenseRank(data ?? []));
       } else {
         setNearbyRankings([]);
       }

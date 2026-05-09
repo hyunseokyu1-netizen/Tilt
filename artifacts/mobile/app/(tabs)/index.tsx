@@ -227,6 +227,7 @@ function LeaderboardRow({
 }
 
 function GameOverOverlay() {
+  const insets = useSafeAreaInsets();
   const {
     score,
     restartGame,
@@ -261,7 +262,10 @@ function GameOverOverlay() {
   return (
     <View style={overlayStyles.container}>
       <ScrollView
-        contentContainerStyle={overlayStyles.scrollContent}
+        contentContainerStyle={[
+          overlayStyles.scrollContent,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
