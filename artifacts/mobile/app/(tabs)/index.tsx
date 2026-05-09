@@ -94,7 +94,7 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
         .select("player_name, score")
         .order("score", { ascending: false })
         .limit(10);
-      setEntries(data ?? []);
+      setEntries((data ?? []).map((e, i) => ({ ...e, rank: i + 1 })));
       setLoading(false);
     })();
   }, []);
@@ -115,10 +115,10 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
           <Text style={overlayStyles.emptyText}>아직 기록이 없습니다</Text>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }}>
-            {entries.map((entry, i) => (
+            {entries.map((entry) => (
               <LeaderboardRow
-                key={i}
-                rank={i + 1}
+                key={entry.rank}
+                rank={entry.rank}
                 name={entry.player_name}
                 score={entry.score}
               />
@@ -234,6 +234,7 @@ function GameOverOverlay() {
     isNewBest,
     rankInfo,
     topRankings,
+    nearbyRankings,
     isSubmittingRank,
     submitScore,
   } = useGame();
@@ -314,15 +315,17 @@ function GameOverOverlay() {
         {topRankings.length > 0 && (
           <View style={lbStyles.container}>
             <Text style={lbStyles.title}>LEADERBOARD</Text>
-            {topRankings.map((entry, i) => {
+
+            {/* Top 1-5 */}
+            {topRankings.map((entry) => {
               const isMe =
                 submitted &&
                 entry.player_name === submittedName &&
                 entry.score === score;
               return (
                 <LeaderboardRow
-                  key={i}
-                  rank={i + 1}
+                  key={entry.rank}
+                  rank={entry.rank}
                   name={isMe ? `${entry.player_name} ★` : entry.player_name}
                   score={entry.score}
                   highlight={isMe}
@@ -330,36 +333,69 @@ function GameOverOverlay() {
               );
             })}
 
-            {/* User's rank if outside top 5 */}
-            {submitted && !userInTop5 && rankInfo && (
-              <>
-                <Text style={lbStyles.ellipsis}>· · ·</Text>
-                <LeaderboardRow
-                  rank={rankInfo.rank}
-                  name={`${submittedName} ★`}
-                  score={score}
-                  highlight
-                />
-              </>
-            )}
+            {/* Nearby window (rank-3 ~ rank+3), deduped from top 5 */}
+            {(() => {
+              const filtered = nearbyRankings.filter(
+                (e) => e.rank > topRankings.length
+              );
+              if (filtered.length === 0) return null;
 
-            {/* Not submitted yet — show rank without name */}
-            {!submitted && rankInfo && rankInfo.rank > 5 && (
-              <>
-                <Text style={lbStyles.ellipsis}>· · ·</Text>
-                <View style={[lbStyles.row, lbStyles.rowHighlight]}>
-                  <Text style={[lbStyles.rank, lbStyles.textHighlight]}>
-                    #{rankInfo.rank}
-                  </Text>
-                  <Text style={[lbStyles.name, lbStyles.textHighlight]}>
-                    —
-                  </Text>
-                  <Text style={[lbStyles.score, lbStyles.scoreHighlight]}>
-                    {score}
-                  </Text>
-                </View>
-              </>
-            )}
+              const firstNearbyRank = filtered[0].rank;
+              const showDots = firstNearbyRank > topRankings.length + 1;
+
+              return (
+                <>
+                  {showDots && (
+                    <Text style={lbStyles.ellipsis}>· · ·</Text>
+                  )}
+                  {filtered.map((entry) => {
+                    const isMe =
+                      submitted &&
+                      entry.player_name === submittedName &&
+                      entry.score === score;
+                    // Before submission: highlight the row where user's score lands
+                    const isMyRank =
+                      !submitted && rankInfo && entry.rank === rankInfo.rank;
+                    return (
+                      <LeaderboardRow
+                        key={entry.rank}
+                        rank={entry.rank}
+                        name={
+                          isMe
+                            ? `${entry.player_name} ★`
+                            : isMyRank
+                            ? "— (나)"
+                            : entry.player_name
+                        }
+                        score={entry.score}
+                        highlight={isMe || !!isMyRank}
+                      />
+                    );
+                  })}
+                </>
+              );
+            })()}
+
+            {/* If rank > 5 but no nearby data yet (or rank not in window) — fallback row */}
+            {rankInfo &&
+              rankInfo.rank > 5 &&
+              nearbyRankings.length === 0 &&
+              !submitted && (
+                <>
+                  <Text style={lbStyles.ellipsis}>· · ·</Text>
+                  <View style={[lbStyles.row, lbStyles.rowHighlight]}>
+                    <Text style={[lbStyles.rank, lbStyles.textHighlight]}>
+                      #{rankInfo.rank}
+                    </Text>
+                    <Text style={[lbStyles.name, lbStyles.textHighlight]}>
+                      —
+                    </Text>
+                    <Text style={[lbStyles.score, lbStyles.scoreHighlight]}>
+                      {score}
+                    </Text>
+                  </View>
+                </>
+              )}
           </View>
         )}
 

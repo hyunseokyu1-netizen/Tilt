@@ -40,6 +40,7 @@ export interface RankInfo {
 export interface RankingEntry {
   player_name: string;
   score: number;
+  rank: number;
 }
 
 const HIGH_SCORE_KEY = "@tilt_high_score";
@@ -61,6 +62,7 @@ export interface GameContextType {
   targetCoord: string;
   rankInfo: RankInfo | null;
   topRankings: RankingEntry[];
+  nearbyRankings: RankingEntry[];
   isSubmittingRank: boolean;
   ttsEnabled: boolean;
   setTtsEnabled: (enabled: boolean) => void;
@@ -125,6 +127,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [flashIndex, setFlashIndex] = useState<number | null>(null);
   const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
   const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
+  const [nearbyRankings, setNearbyRankings] = useState<RankingEntry[]>([]);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
   const [ttsEnabled, setTtsEnabledState] = useState(true);
 
@@ -195,9 +198,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .order("score", { ascending: false })
           .limit(5),
       ]);
+
       const rank = (rankResult.count ?? 0) + 1;
       setRankInfo({ rank, qualifies: rank <= 1000 });
-      setTopRankings(top5Result.data ?? []);
+      setTopRankings(
+        (top5Result.data ?? []).map((e, i) => ({ ...e, rank: i + 1 }))
+      );
+
+      // Fetch window around user's rank: [rank-3 .. rank+3]
+      if (rank > 5) {
+        const offset = Math.max(0, rank - 4); // 0-indexed → gives rank-3 at minimum
+        const { data } = await supabase
+          .from("rankings")
+          .select("player_name, score")
+          .order("score", { ascending: false })
+          .range(offset, offset + 6);
+        setNearbyRankings(
+          (data ?? []).map((e, i) => ({ ...e, rank: offset + i + 1 }))
+        );
+      } else {
+        setNearbyRankings([]);
+      }
     } catch {
       // ranking fetch is non-critical
     }
@@ -222,17 +243,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         player_name: name.trim(),
         score: scoreRef.current,
       });
-      // Refresh top 5 after submission
-      const { data } = await supabase
-        .from("rankings")
-        .select("player_name, score")
-        .order("score", { ascending: false })
-        .limit(5);
-      setTopRankings(data ?? []);
+      // Refresh rankings after submission
+      await fetchRankings(scoreRef.current);
     } finally {
       setIsSubmittingRank(false);
     }
-  }, []);
+  }, [fetchRankings]);
 
   const handleReach = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -298,6 +314,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setFlashIndex(null);
     setRankInfo(null);
     setTopRankings([]);
+    setNearbyRankings([]);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -325,6 +342,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsNewBest(false);
     setRankInfo(null);
     setTopRankings([]);
+    setNearbyRankings([]);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -431,6 +449,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         targetCoord,
         rankInfo,
         topRankings,
+        nearbyRankings,
         isSubmittingRank,
         ttsEnabled,
         setTtsEnabled,
