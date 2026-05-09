@@ -16,7 +16,7 @@ import {
 
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { RankingEntry } from "@/contexts/GameContext";
-import { applyDenseRank } from "@/utils/ranking";
+import { applyRank } from "@/utils/ranking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CircuitLines } from "@/components/CircuitLines";
@@ -102,8 +102,9 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
         .select("player_name, score, total_play_time")
         .order("score", { ascending: false })
         .order("total_play_time", { ascending: true })
+        .order("created_at", { ascending: true })
         .limit(10);
-      setEntries(applyDenseRank(data ?? []));
+      setEntries(applyRank(data ?? [], 0));
       setLoading(false);
     })();
   }, []);
@@ -359,69 +360,92 @@ function GameOverOverlay() {
               );
             })}
 
-            {/* Nearby window (±3 around user), entries not already in top 5 */}
+            {/* Nearby window (±3 around user) — position-based slice, ghost "me" row */}
             {(() => {
               if (nearbyRankings.length === 0) return null;
 
-              const topSet = new Set(
-                topRankings.map((r) => `${r.player_name}::${r.score}::${r.total_play_time}`)
-              );
-              const filtered = nearbyRankings.filter(
-                (e) => !topSet.has(`${e.player_name}::${e.score}::${e.total_play_time}`)
-              );
+              // Entries at positions nearbyOffset…nearbyOffset+6
+              // Top 5 occupies positions 0-4; slice out the overlap
+              const overlapCount = Math.max(0, 5 - nearbyOffset);
+              const filtered = nearbyRankings.slice(overlapCount);
               if (filtered.length === 0) return null;
 
-              const overlapCount = nearbyRankings.length - filtered.length;
-              const showDots = nearbyOffset + overlapCount > 5;
+              const firstPos = nearbyOffset + overlapCount; // 0-based global position
+              const showDots = firstPos > 4; // gap after top5
+
+              const rows: React.ReactNode[] = [];
+              let ghostInserted = submitted || !rankInfo;
+
+              for (let i = 0; i < filtered.length; i++) {
+                const entry = filtered[i];
+                // Inject ghost "me" row just before the first entry whose rank ≥ userRank
+                if (!ghostInserted && entry.rank >= rankInfo!.rank) {
+                  ghostInserted = true;
+                  rows.push(
+                    <LeaderboardRow
+                      key="me-ghost"
+                      rank={rankInfo!.rank}
+                      name="— (me)"
+                      score={score}
+                      highlight
+                    />
+                  );
+                }
+                const isMe =
+                  submitted &&
+                  entry.player_name === submittedName &&
+                  entry.score === score;
+                // Shift display rank by 1 for rows below the ghost (user pushes them down on submit)
+                const displayRank =
+                  !submitted && rankInfo && entry.rank >= rankInfo.rank
+                    ? entry.rank + 1
+                    : entry.rank;
+                rows.push(
+                  <LeaderboardRow
+                    key={`nearby-${entry.rank}`}
+                    rank={displayRank}
+                    name={isMe ? `${entry.player_name} ★` : entry.player_name}
+                    score={entry.score}
+                    totalPlayTime={entry.total_play_time}
+                    highlight={isMe}
+                  />
+                );
+              }
+
+              // Ghost at end if user falls after the last displayed entry
+              if (!ghostInserted) {
+                rows.push(
+                  <LeaderboardRow
+                    key="me-ghost"
+                    rank={rankInfo!.rank}
+                    name="— (me)"
+                    score={score}
+                    highlight
+                  />
+                );
+              }
 
               return (
                 <>
                   {showDots && <Text style={lbStyles.ellipsis}>· · ·</Text>}
-                  {filtered.map((entry, idx) => {
-                    const isMe =
-                      submitted &&
-                      entry.player_name === submittedName &&
-                      entry.score === score;
-                    const isMyScore = !submitted && entry.score === score;
-                    return (
-                      <LeaderboardRow
-                        key={`nearby-${nearbyOffset + overlapCount + idx}`}
-                        rank={entry.rank}
-                        name={
-                          isMe
-                            ? `${entry.player_name} ★`
-                            : isMyScore
-                            ? "— (me)"
-                            : entry.player_name
-                        }
-                        score={entry.score}
-                        totalPlayTime={entry.total_play_time}
-                        highlight={isMe || isMyScore}
-                      />
-                    );
-                  })}
+                  {rows}
                 </>
               );
             })()}
 
-            {/* If rank > 5 but no nearby data yet (or rank not in window) — fallback row */}
+            {/* Fallback: network error prevented nearby fetch */}
             {rankInfo &&
               rankInfo.rank > 5 &&
               nearbyRankings.length === 0 &&
               !submitted && (
                 <>
                   <Text style={lbStyles.ellipsis}>· · ·</Text>
-                  <View style={[lbStyles.row, lbStyles.rowHighlight]}>
-                    <Text style={[lbStyles.rank, lbStyles.textHighlight]}>
-                      #{rankInfo.rank}
-                    </Text>
-                    <Text style={[lbStyles.name, lbStyles.textHighlight]}>
-                      —
-                    </Text>
-                    <Text style={[lbStyles.score, lbStyles.scoreHighlight]}>
-                      {score}
-                    </Text>
-                  </View>
+                  <LeaderboardRow
+                    rank={rankInfo.rank}
+                    name="— (me)"
+                    score={score}
+                    highlight
+                  />
                 </>
               )}
           </View>

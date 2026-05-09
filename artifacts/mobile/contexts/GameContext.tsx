@@ -15,7 +15,7 @@ import { Platform } from "react-native";
 
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { indexToCoord } from "../utils/coords";
-import { applyDenseRank } from "../utils/ranking";
+import { applyRank } from "../utils/ranking";
 
 const TICK_SOUND = require("../assets/sounds/tick.wav");
 const BUMP_SOUND = require("../assets/sounds/bump.wav");
@@ -194,9 +194,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const fetchRankings = useCallback(async (finalScore: number, finalPlayTime: number) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      // Entries strictly above user: higher score OR (same score AND less time)
+      // Rows strictly above user: better score, OR same score with less-or-equal time
+      // (same score + same time = registered earlier → all count as "above" pre-submission)
       const aboveFilter =
-        `score.gt.${finalScore},and(score.eq.${finalScore},total_play_time.lt.${finalPlayTime})`;
+        `score.gt.${finalScore},and(score.eq.${finalScore},total_play_time.lte.${finalPlayTime})`;
 
       const [top5Result, higherResult] = await Promise.all([
         supabase
@@ -204,26 +205,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .select("player_name, score, total_play_time")
           .order("score", { ascending: false })
           .order("total_play_time", { ascending: true })
+          .order("created_at", { ascending: true })
           .limit(5),
+        // Use head:true to get count only — avoids fetching all rows
         supabase
           .from("rankings")
-          .select("score, total_play_time")
+          .select("*", { count: "exact", head: true })
           .or(aboveFilter),
       ]);
 
-      // DENSE_RANK: count distinct (score, total_play_time) pairs above user
-      const higherEntries = higherResult.data ?? [];
-      const distinctAbove = new Set(
-        higherEntries.map((r) => `${r.score}::${r.total_play_time}`)
-      ).size;
-      const denseRank = distinctAbove + 1;
-      // Qualification uses total row count (not dense rank)
-      const totalAbove = higherEntries.length;
-      setRankInfo({ rank: denseRank, qualifies: totalAbove < 1000 });
+      // Sequential rank: every row has its own rank number
+      const totalAbove = higherResult.count ?? 0;
+      const userRank = totalAbove + 1;
+      setRankInfo({ rank: userRank, qualifies: totalAbove < 1000 });
 
-      setTopRankings(applyDenseRank(top5Result.data ?? []));
+      setTopRankings(applyRank(top5Result.data ?? [], 0));
 
-      // Fetch window around user's row using COUNT-based offset
       if (totalAbove >= 5) {
         const offset = Math.max(0, totalAbove - 3);
         const { data } = await supabase
@@ -231,32 +228,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           .select("player_name, score, total_play_time")
           .order("score", { ascending: false })
           .order("total_play_time", { ascending: true })
+          .order("created_at", { ascending: true })
           .range(offset, offset + 6);
 
-        // Compute global DENSE_RANK by combining top5 + nearby (deduped)
-        const nearbyData = data ?? [];
-        const seen = new Set<string>();
-        const combined: { player_name: string; score: number; total_play_time: number }[] = [];
-        for (const e of [...(top5Result.data ?? []), ...nearbyData]) {
-          const key = `${e.player_name}::${e.score}::${e.total_play_time ?? 0}`;
-          if (!seen.has(key)) { seen.add(key); combined.push({ ...e, total_play_time: e.total_play_time ?? 0 }); }
-        }
-        combined.sort((a, b) =>
-          b.score !== a.score ? b.score - a.score : a.total_play_time - b.total_play_time
-        );
-        const globalRanked = applyDenseRank(combined);
-
-        const nearbyGlobal = nearbyData
-          .map((ne) => {
-            const key = `${ne.player_name}::${ne.score}::${ne.total_play_time ?? 0}`;
-            return globalRanked.find(
-              (r) => `${r.player_name}::${r.score}::${r.total_play_time}` === key
-            )!;
-          })
-          .filter(Boolean);
-
         setNearbyOffset(offset);
-        setNearbyRankings(nearbyGlobal);
+        // Each entry's global rank = offset + index + 1
+        setNearbyRankings(applyRank(data ?? [], offset));
       } else {
         setNearbyOffset(0);
         setNearbyRankings([]);
