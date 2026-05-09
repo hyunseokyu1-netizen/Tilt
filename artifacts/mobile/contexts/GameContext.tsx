@@ -41,6 +41,7 @@ export interface RankInfo {
 export interface RankingEntry {
   player_name: string;
   score: number;
+  total_play_time: number;
   rank: number;
 }
 
@@ -177,8 +178,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const maxTimeRef = useRef(maxTime);
   const lastMoveRef = useRef(0);
   const nextMetronomeTickRef = useRef(0);
-  // score ref for ranking fetch
   const scoreRef = useRef(score);
+  // Track accumulated play time (ms) across successful rounds only
+  const totalPlayTimeRef = useRef(0);
+  // Timestamp of current round start (Date.now())
+  const roundStartTimeRef = useRef(0);
 
   phaseRef.current = phase;
   playerRef.current = playerIndex;
@@ -187,59 +191,67 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   maxTimeRef.current = maxTime;
   scoreRef.current = score;
 
-  const fetchRankings = useCallback(async (finalScore: number) => {
+  const fetchRankings = useCallback(async (finalScore: number, finalPlayTime: number) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
-      // Fetch top 5 + all scores above user in parallel
+      // Entries strictly above user: higher score OR (same score AND less time)
+      const aboveFilter =
+        `score.gt.${finalScore},and(score.eq.${finalScore},total_play_time.lt.${finalPlayTime})`;
+
       const [top5Result, higherResult] = await Promise.all([
         supabase
           .from("rankings")
-          .select("player_name, score")
+          .select("player_name, score, total_play_time")
           .order("score", { ascending: false })
+          .order("total_play_time", { ascending: true })
           .limit(5),
         supabase
           .from("rankings")
-          .select("score")
-          .gt("score", finalScore),
+          .select("score, total_play_time")
+          .or(aboveFilter),
       ]);
 
-      // DENSE_RANK: count distinct scores above user
-      const higherScores = higherResult.data ?? [];
-      const denseRank = new Set(higherScores.map((r) => r.score)).size + 1;
-      // Qualification uses total player count (not dense rank)
-      const totalAbove = higherScores.length;
+      // DENSE_RANK: count distinct (score, total_play_time) pairs above user
+      const higherEntries = higherResult.data ?? [];
+      const distinctAbove = new Set(
+        higherEntries.map((r) => `${r.score}::${r.total_play_time}`)
+      ).size;
+      const denseRank = distinctAbove + 1;
+      // Qualification uses total row count (not dense rank)
+      const totalAbove = higherEntries.length;
       setRankInfo({ rank: denseRank, qualifies: totalAbove < 1000 });
 
-      // Apply DENSE_RANK to top 5
       setTopRankings(applyDenseRank(top5Result.data ?? []));
 
       // Fetch window around user's row using COUNT-based offset
-      // Use totalAbove >= 5 (not denseRank > 5) so massive ties don't skip the fetch
       if (totalAbove >= 5) {
-        // Center on user's actual position (totalAbove = count of entries above)
-        // Fetch 3 before + user's row + 3 after = 7 entries
         const offset = Math.max(0, totalAbove - 3);
         const { data } = await supabase
           .from("rankings")
-          .select("player_name, score")
+          .select("player_name, score, total_play_time")
           .order("score", { ascending: false })
+          .order("total_play_time", { ascending: true })
           .range(offset, offset + 6);
 
         // Compute global DENSE_RANK by combining top5 + nearby (deduped)
         const nearbyData = data ?? [];
         const seen = new Set<string>();
-        const combined: { player_name: string; score: number }[] = [];
+        const combined: { player_name: string; score: number; total_play_time: number }[] = [];
         for (const e of [...(top5Result.data ?? []), ...nearbyData]) {
-          const key = `${e.player_name}::${e.score}`;
-          if (!seen.has(key)) { seen.add(key); combined.push(e); }
+          const key = `${e.player_name}::${e.score}::${e.total_play_time ?? 0}`;
+          if (!seen.has(key)) { seen.add(key); combined.push({ ...e, total_play_time: e.total_play_time ?? 0 }); }
         }
-        combined.sort((a, b) => b.score - a.score);
+        combined.sort((a, b) =>
+          b.score !== a.score ? b.score - a.score : a.total_play_time - b.total_play_time
+        );
         const globalRanked = applyDenseRank(combined);
 
         const nearbyGlobal = nearbyData
           .map((ne) => {
-            const key = `${ne.player_name}::${ne.score}`;
-            return globalRanked.find((r) => `${r.player_name}::${r.score}` === key)!;
+            const key = `${ne.player_name}::${ne.score}::${ne.total_play_time ?? 0}`;
+            return globalRanked.find(
+              (r) => `${r.player_name}::${r.score}::${r.total_play_time}` === key
+            )!;
           })
           .filter(Boolean);
 
@@ -262,7 +274,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const finalScore = scoreRef.current;
     if (finalScore === 0) return;
-    fetchRankings(finalScore);
+    fetchRankings(finalScore, totalPlayTimeRef.current);
   }, [phase, fetchRankings]);
 
   const submitScore = useCallback(async (name: string) => {
@@ -272,15 +284,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       await supabase.from("rankings").insert({
         player_name: name.trim(),
         score: scoreRef.current,
+        total_play_time: totalPlayTimeRef.current,
       });
-      // Refresh rankings after submission
-      await fetchRankings(scoreRef.current);
+      await fetchRankings(scoreRef.current, totalPlayTimeRef.current);
     } finally {
       setIsSubmittingRank(false);
     }
   }, [fetchRankings]);
 
   const handleReach = useCallback(() => {
+    // Accumulate time spent on this round (only successful rounds count)
+    totalPlayTimeRef.current += Date.now() - roundStartTimeRef.current;
+    roundStartTimeRef.current = Date.now();
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     playSound(clearPlayer);
     const reachedCell = targetRef.current;
@@ -355,6 +371,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     roundRef.current = 0;
     maxTimeRef.current = INITIAL_MAX_TIME;
     nextMetronomeTickRef.current = 0;
+    totalPlayTimeRef.current = 0;
+    roundStartTimeRef.current = Date.now();
     if (ttsEnabledRef.current) speakPosition(4, target);
   }, []);
 
@@ -481,6 +499,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         rankInfo,
         topRankings,
         nearbyRankings,
+        nearbyOffset,
         isSubmittingRank,
         ttsEnabled,
         setTtsEnabled,

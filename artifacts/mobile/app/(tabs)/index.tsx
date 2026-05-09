@@ -16,6 +16,7 @@ import {
 
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { RankingEntry } from "@/contexts/GameContext";
+import { applyDenseRank } from "@/utils/ranking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CircuitLines } from "@/components/CircuitLines";
@@ -24,6 +25,13 @@ import { TimerBar } from "@/components/TimerBar";
 import { useGame } from "@/contexts/GameContext";
 
 const { width: SW } = Dimensions.get("window");
+
+function formatPlayTime(ms: number): string {
+  if (!ms) return "";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
 
 function DPad() {
   const { movePlayer } = useGame();
@@ -91,10 +99,11 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
       }
       const { data } = await supabase
         .from("rankings")
-        .select("player_name, score")
+        .select("player_name, score, total_play_time")
         .order("score", { ascending: false })
+        .order("total_play_time", { ascending: true })
         .limit(10);
-      setEntries((data ?? []).map((e, i) => ({ ...e, rank: i + 1 })));
+      setEntries(applyDenseRank(data ?? []));
       setLoading(false);
     })();
   }, []);
@@ -117,10 +126,11 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
           <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }}>
             {entries.map((entry) => (
               <LeaderboardRow
-                key={entry.rank}
+                key={`${entry.rank}-${entry.player_name}`}
                 rank={entry.rank}
                 name={entry.player_name}
                 score={entry.score}
+                totalPlayTime={entry.total_play_time}
               />
             ))}
           </ScrollView>
@@ -201,13 +211,16 @@ function LeaderboardRow({
   rank,
   name,
   score,
+  totalPlayTime,
   highlight,
 }: {
   rank: number;
   name: string;
   score: number;
+  totalPlayTime?: number;
   highlight?: boolean;
 }) {
+  const timeStr = totalPlayTime ? formatPlayTime(totalPlayTime) : "";
   return (
     <View style={[lbStyles.row, highlight && lbStyles.rowHighlight]}>
       <Text style={[lbStyles.rank, highlight && lbStyles.textHighlight]}>
@@ -219,9 +232,16 @@ function LeaderboardRow({
       >
         {name}
       </Text>
-      <Text style={[lbStyles.score, highlight && lbStyles.scoreHighlight]}>
-        {score}
-      </Text>
+      <View style={lbStyles.scoreCol}>
+        <Text style={[lbStyles.score, highlight && lbStyles.scoreHighlight]}>
+          {score}
+        </Text>
+        {!!timeStr && (
+          <Text style={[lbStyles.time, highlight && lbStyles.timeHighlight]}>
+            {timeStr}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -329,10 +349,11 @@ function GameOverOverlay() {
                 entry.score === score;
               return (
                 <LeaderboardRow
-                  key={entry.rank}
+                  key={`top-${entry.rank}-${entry.player_name}`}
                   rank={entry.rank}
                   name={isMe ? `${entry.player_name} ★` : entry.player_name}
                   score={entry.score}
+                  totalPlayTime={entry.total_play_time}
                   highlight={isMe}
                 />
               );
@@ -343,10 +364,10 @@ function GameOverOverlay() {
               if (nearbyRankings.length === 0) return null;
 
               const topSet = new Set(
-                topRankings.map((r) => `${r.player_name}::${r.score}`)
+                topRankings.map((r) => `${r.player_name}::${r.score}::${r.total_play_time}`)
               );
               const filtered = nearbyRankings.filter(
-                (e) => !topSet.has(`${e.player_name}::${e.score}`)
+                (e) => !topSet.has(`${e.player_name}::${e.score}::${e.total_play_time}`)
               );
               if (filtered.length === 0) return null;
 
@@ -374,6 +395,7 @@ function GameOverOverlay() {
                             : entry.player_name
                         }
                         score={entry.score}
+                        totalPlayTime={entry.total_play_time}
                         highlight={isMe || isMyScore}
                       />
                     );
@@ -973,6 +995,9 @@ const lbStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_500Medium",
   },
+  scoreCol: {
+    alignItems: "flex-end",
+  },
   score: {
     color: "#FFD700",
     fontSize: 15,
@@ -980,11 +1005,21 @@ const lbStyles = StyleSheet.create({
     minWidth: 30,
     textAlign: "right",
   },
+  time: {
+    color: "#3A7AB5",
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    textAlign: "right",
+    letterSpacing: 0.5,
+  },
   textHighlight: {
     color: "#00FFB3",
   },
   scoreHighlight: {
     color: "#00FFB3",
+  },
+  timeHighlight: {
+    color: "rgba(0,255,179,0.6)",
   },
   ellipsis: {
     color: "#1A3A5C",

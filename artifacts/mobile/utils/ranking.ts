@@ -1,19 +1,22 @@
 import type { RankingEntry } from "@/contexts/GameContext";
 
 /**
- * Assigns DENSE_RANK to a sorted-by-score-desc array.
- * Tied scores share the same rank; the next distinct score gets rank+1 (no gaps).
+ * Assigns DENSE_RANK to a sorted (score DESC, total_play_time ASC) array.
+ * Identical (score, total_play_time) pairs share the same rank; the next
+ * distinct pair gets rank+1 (no gaps).
  */
 export function applyDenseRank(
-  entries: { player_name: string; score: number }[]
+  entries: { player_name: string; score: number; total_play_time?: number }[]
 ): RankingEntry[] {
   let rank = 0;
-  let prevScore = NaN;
+  let prevKey = "";
   return entries.map((e) => {
-    if (e.score !== prevScore) {
+    const pt = e.total_play_time ?? 0;
+    const key = `${e.score}::${pt}`;
+    if (key !== prevKey) {
       rank++;
-      prevScore = e.score;
+      prevKey = key;
     }
-    return { ...e, rank };
+    return { ...e, total_play_time: pt, rank };
   });
 }
