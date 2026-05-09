@@ -64,6 +64,7 @@ export interface GameContextType {
   rankInfo: RankInfo | null;
   topRankings: RankingEntry[];
   nearbyRankings: RankingEntry[];
+  nearbyOffset: number;
   isSubmittingRank: boolean;
   ttsEnabled: boolean;
   setTtsEnabled: (enabled: boolean) => void;
@@ -129,6 +130,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
   const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
   const [nearbyRankings, setNearbyRankings] = useState<RankingEntry[]>([]);
+  const [nearbyOffset, setNearbyOffset] = useState(0);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
   const [ttsEnabled, setTtsEnabledState] = useState(true);
 
@@ -212,15 +214,39 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setTopRankings(applyDenseRank(top5Result.data ?? []));
 
       // Fetch window around user's row using COUNT-based offset
-      if (denseRank > 5) {
+      // Use totalAbove >= 5 (not denseRank > 5) so massive ties don't skip the fetch
+      if (totalAbove >= 5) {
+        // Center on user's actual position (totalAbove = count of entries above)
+        // Fetch 3 before + user's row + 3 after = 7 entries
         const offset = Math.max(0, totalAbove - 3);
         const { data } = await supabase
           .from("rankings")
           .select("player_name, score")
           .order("score", { ascending: false })
           .range(offset, offset + 6);
-        setNearbyRankings(applyDenseRank(data ?? []));
+
+        // Compute global DENSE_RANK by combining top5 + nearby (deduped)
+        const nearbyData = data ?? [];
+        const seen = new Set<string>();
+        const combined: { player_name: string; score: number }[] = [];
+        for (const e of [...(top5Result.data ?? []), ...nearbyData]) {
+          const key = `${e.player_name}::${e.score}`;
+          if (!seen.has(key)) { seen.add(key); combined.push(e); }
+        }
+        combined.sort((a, b) => b.score - a.score);
+        const globalRanked = applyDenseRank(combined);
+
+        const nearbyGlobal = nearbyData
+          .map((ne) => {
+            const key = `${ne.player_name}::${ne.score}`;
+            return globalRanked.find((r) => `${r.player_name}::${r.score}` === key)!;
+          })
+          .filter(Boolean);
+
+        setNearbyOffset(offset);
+        setNearbyRankings(nearbyGlobal);
       } else {
+        setNearbyOffset(0);
         setNearbyRankings([]);
       }
     } catch {
@@ -319,6 +345,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setRankInfo(null);
     setTopRankings([]);
     setNearbyRankings([]);
+    setNearbyOffset(0);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;

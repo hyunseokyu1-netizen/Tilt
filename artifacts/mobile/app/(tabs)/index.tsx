@@ -236,6 +236,7 @@ function GameOverOverlay() {
     rankInfo,
     topRankings,
     nearbyRankings,
+    nearbyOffset,
     isSubmittingRank,
     submitScore,
   } = useGame();
@@ -337,42 +338,43 @@ function GameOverOverlay() {
               );
             })}
 
-            {/* Nearby window (rank-3 ~ rank+3), deduped from top 5 */}
+            {/* Nearby window (±3 around user), entries not already in top 5 */}
             {(() => {
+              if (nearbyRankings.length === 0) return null;
+
+              const topSet = new Set(
+                topRankings.map((r) => `${r.player_name}::${r.score}`)
+              );
               const filtered = nearbyRankings.filter(
-                (e) => e.rank > topRankings.length
+                (e) => !topSet.has(`${e.player_name}::${e.score}`)
               );
               if (filtered.length === 0) return null;
 
-              const firstNearbyRank = filtered[0].rank;
-              const showDots = firstNearbyRank > topRankings.length + 1;
+              const overlapCount = nearbyRankings.length - filtered.length;
+              const showDots = nearbyOffset + overlapCount > 5;
 
               return (
                 <>
-                  {showDots && (
-                    <Text style={lbStyles.ellipsis}>· · ·</Text>
-                  )}
-                  {filtered.map((entry) => {
+                  {showDots && <Text style={lbStyles.ellipsis}>· · ·</Text>}
+                  {filtered.map((entry, idx) => {
                     const isMe =
                       submitted &&
                       entry.player_name === submittedName &&
                       entry.score === score;
-                    // Before submission: highlight the row where user's score lands
-                    const isMyRank =
-                      !submitted && rankInfo && entry.rank === rankInfo.rank;
+                    const isMyScore = !submitted && entry.score === score;
                     return (
                       <LeaderboardRow
-                        key={entry.rank}
+                        key={`nearby-${nearbyOffset + overlapCount + idx}`}
                         rank={entry.rank}
                         name={
                           isMe
                             ? `${entry.player_name} ★`
-                            : isMyRank
+                            : isMyScore
                             ? "— (me)"
                             : entry.player_name
                         }
                         score={entry.score}
-                        highlight={isMe || !!isMyRank}
+                        highlight={isMe || isMyScore}
                       />
                     );
                   })}
