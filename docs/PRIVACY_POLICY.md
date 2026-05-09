@@ -61,7 +61,7 @@ We may update this policy from time to time. Changes take effect when posted her
 
 ### Contact
 
-**Email:** hyunseok.yu1@gmail.com  
+**Email:** backdev.tip@gmail.com  
 **GitHub:** https://github.com/hyunseokyu1-netizen/Tilt
 
 ---
@@ -123,7 +123,7 @@ Supabase 개인정보처리방침: https://supabase.com/privacy
 
 ### 문의
 
-**이메일:** hyunseok.yu1@gmail.com  
+**이메일:** backdev.tip@gmail.com  
 **GitHub:** https://github.com/hyunseokyu1-netizen/Tilt
 
 ---
