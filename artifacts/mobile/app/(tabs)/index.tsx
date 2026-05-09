@@ -258,6 +258,7 @@ function GameOverOverlay() {
     topRankings,
     nearbyRankings,
     nearbyOffset,
+    isLoadingRankings,
     isSubmittingRank,
     submitScore,
   } = useGame();
@@ -452,7 +453,7 @@ function GameOverOverlay() {
         )}
 
         {/* Loading state */}
-        {!topRankings.length && !rankInfo && score > 0 && (
+        {isLoadingRankings && (
           <ActivityIndicator
             size="small"
             color="#3A7AB5"

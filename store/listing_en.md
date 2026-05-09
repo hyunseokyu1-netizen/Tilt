@@ -26,7 +26,7 @@ TILT is fully playable without looking at the screen:
 
 🏆 COMPETE GLOBALLY
 • Submit your score and appear on the live global leaderboard
-• DENSE ranking system with full tie support
+• Every player gets a unique sequential rank — score, then time, then order of entry
 • See your exact rank and the players directly around you (±3 rows)
 
 📍 THE COORDINATE SYSTEM

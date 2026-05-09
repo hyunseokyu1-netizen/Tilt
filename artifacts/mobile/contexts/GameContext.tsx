@@ -66,6 +66,7 @@ export interface GameContextType {
   topRankings: RankingEntry[];
   nearbyRankings: RankingEntry[];
   nearbyOffset: number;
+  isLoadingRankings: boolean;
   isSubmittingRank: boolean;
   ttsEnabled: boolean;
   setTtsEnabled: (enabled: boolean) => void;
@@ -132,6 +133,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
   const [nearbyRankings, setNearbyRankings] = useState<RankingEntry[]>([]);
   const [nearbyOffset, setNearbyOffset] = useState(0);
+  const [isLoadingRankings, setIsLoadingRankings] = useState(false);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
   const [ttsEnabled, setTtsEnabledState] = useState(true);
 
@@ -192,7 +194,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   scoreRef.current = score;
 
   const fetchRankings = useCallback(async (finalScore: number, finalPlayTime: number) => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured || !supabase) {
+      setIsLoadingRankings(false);
+      return;
+    }
+    setIsLoadingRankings(true);
     try {
       // Rows strictly above user: better score, OR same score with less-or-equal time
       // (same score + same time = registered earlier → all count as "above" pre-submission)
@@ -240,6 +246,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       // ranking fetch is non-critical
+    } finally {
+      setIsLoadingRankings(false);
     }
   }, []);
 
@@ -250,7 +258,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setTopRankings([]);
 
     const finalScore = scoreRef.current;
-    if (finalScore === 0) return;
+    if (finalScore === 0) {
+      setIsLoadingRankings(false);
+      return;
+    }
+    setIsLoadingRankings(true);
     fetchRankings(finalScore, totalPlayTimeRef.current);
   }, [phase, fetchRankings]);
 
@@ -477,6 +489,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         topRankings,
         nearbyRankings,
         nearbyOffset,
+        isLoadingRankings,
         isSubmittingRank,
         ttsEnabled,
         setTtsEnabled,
