@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!--
+  TILT Screenshot 3 — Game Over + Leaderboard
+  Open in Chrome → DevTools → Device: 390×844 → Capture screenshot
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>TILT — Game Over</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    background: rgba(8,18,28,0.97);
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Scroll content */
+  .scroll {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 28px 40px;
+    gap: 0;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .game-over-label {
+    color: #FF3B30;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+  }
+  .new-best-label {
+    color: #00FFB3;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 16px rgba(0,255,179,0.6);
+  }
+  .score-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .final-score { color: #FFD700; font-size: 80px; font-weight: 700; line-height: 1; }
+  .final-unit {
+    color: #3A7AB5;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  /* Rank info */
+  .rank-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .rank-text {
+    color: #FFD700;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  /* Name input */
+  .input-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .input-label { color: #5A8AB5; font-size: 12px; letter-spacing: 1px; }
+  .name-input {
+    border: 1px solid #1A5F8A;
+    border-radius: 6px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 14px;
+    width: 220px;
+    text-align: center;
+    background: #0A1929;
+    font-family: inherit;
+  }
+  .submit-btn {
+    background: #00C4FF;
+    border-radius: 6px;
+    padding: 10px 32px;
+    border: none;
+    color: #0B1622;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+
+  /* Leaderboard */
+  .lb-container { width: 100%; margin-bottom: 16px; }
+  .lb-title {
+    color: #3A7AB5;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    background: #0A1929;
+    gap: 8px;
+  }
+  .lb-row.me {
+    background: rgba(0,255,179,0.08);
+    border: 1px solid rgba(0,255,179,0.25);
+  }
+  .lb-rank { width: 36px; color: #3A7AB5; font-size: 12px; font-weight: 600; }
+  .lb-rank.me { color: #00FFB3; }
+  .lb-name { flex: 1; color: #8AB5D5; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-name.me { color: #00FFB3; }
+  .lb-score { color: #FFD700; font-size: 15px; font-weight: 700; min-width: 30px; text-align: right; }
+  .lb-score.me { color: #00FFB3; }
+  .lb-ellipsis { color: #1A3A5C; text-align: center; font-size: 14px; letter-spacing: 4px; margin: 4px 0; }
+
+  /* Action buttons */
+  .btn {
+    width: 100%;
+    background: #00FFB3;
+    border-radius: 6px;
+    padding: 16px;
+    border: none;
+    color: #0B1622;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,255,179,0.35);
+    margin-bottom: 12px;
+  }
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    border: 1px solid #1A3A5C;
+    border-radius: 6px;
+    padding: 12px;
+    background: none;
+    color: #3A7AB5;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll">
+  <div class="game-over-label">TIME UP</div>
+  <div class="new-best-label">NEW BEST!</div>
+
+  <div class="score-row">
+    <span class="final-score">9</span>
+    <span class="final-unit">cells</span>
+  </div>
+
+  <!-- Name input (qualifying rank) -->
+  <div class="input-box">
+    <div class="rank-text">GLOBAL RANK #8</div>
+    <div class="input-label">Enter your name</div>
+    <input class="name-input" type="text" placeholder="Your name" value=""/>
+    <button class="submit-btn">SAVE SCORE</button>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="lb-container">
+    <div class="lb-title">LEADERBOARD</div>
+
+    <!-- Top 5 -->
+    <div class="lb-row">
+      <span class="lb-rank">#1</span>
+      <span class="lb-name">ShadowTilt</span>
+      <span class="lb-score">31</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#2</span>
+      <span class="lb-name">GridMaster</span>
+      <span class="lb-score">28</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#3</span>
+      <span class="lb-name">AceNav</span>
+      <span class="lb-score">24</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#4</span>
+      <span class="lb-name">SpeedCell</span>
+      <span class="lb-score">19</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#5</span>
+      <span class="lb-name">QuickTilt</span>
+      <span class="lb-score">15</span>
+    </div>
+
+    <!-- Ellipsis separator -->
+    <div class="lb-ellipsis">· · ·</div>
+
+    <!-- User's neighborhood (±3) -->
+    <div class="lb-row">
+      <span class="lb-rank">#6</span>
+      <span class="lb-name">BlueZone</span>
+      <span class="lb-score">12</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#7</span>
+      <span class="lb-name">Ranger42</span>
+      <span class="lb-score">11</span>
+    </div>
+
+    <!-- Me row (before submission) -->
+    <div class="lb-row me">
+      <span class="lb-rank me">#8</span>
+      <span class="lb-name me">— (me)</span>
+      <span class="lb-score me">9</span>
+    </div>
+
+    <div class="lb-row">
+      <span class="lb-rank">#9</span>
+      <span class="lb-name">NightCell</span>
+      <span class="lb-score">8</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#10</span>
+      <span class="lb-name">WaveRider</span>
+      <span class="lb-score">7</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">#11</span>
+      <span class="lb-name">XAxis</span>
+      <span class="lb-score">6</span>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <button class="btn">PLAY AGAIN</button>
+  <button class="btn-secondary">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3A7AB5" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    MAIN MENU
+  </button>
+</div>
+
+<!-- Home indicator -->
+<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:5px;background:#fff;opacity:0.2;border-radius:3px;"></div>
+
+</body>
+</html>

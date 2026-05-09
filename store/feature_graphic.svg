@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TILT Feature Graphic — 1024×500 — Google Play Store -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#102236"/>
+      <stop offset="100%" stop-color="#0B1622"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-xl" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="divider" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#00FFB3" stop-opacity="0"/>
+      <stop offset="40%"  stop-color="#00FFB3" stop-opacity="0.3"/>
+      <stop offset="60%"  stop-color="#00FFB3" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00FFB3" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#bg)"/>
+
+  <!-- Circuit grid background (subtle) -->
+  <line x1="0"    y1="100" x2="1024" y2="100" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="0"    y1="200" x2="1024" y2="200" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="0"    y1="300" x2="1024" y2="300" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="0"    y1="400" x2="1024" y2="400" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="200"  y1="0"   x2="200"  y2="500" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="400"  y1="0"   x2="400"  y2="500" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="600"  y1="0"   x2="600"  y2="500" stroke="#0D1E30" stroke-width="1"/>
+  <line x1="800"  y1="0"   x2="800"  y2="500" stroke="#0D1E30" stroke-width="1"/>
+
+  <!-- Left panel: Title + Features (0–540) -->
+
+  <!-- TILT title — glow layer -->
+  <text x="64" y="220" font-family="'Arial Black',Impact,sans-serif"
+        font-weight="900" font-size="148" letter-spacing="18"
+        opacity="0.5" filter="url(#glow-xl)">
+    <tspan fill="#FF6B35">T</tspan><tspan fill="#FFD700">I</tspan><tspan fill="#00C4FF">L</tspan><tspan fill="#00FFB3">T</tspan>
+  </text>
+  <!-- TILT title — main -->
+  <text x="64" y="220" font-family="'Arial Black',Impact,sans-serif"
+        font-weight="900" font-size="148" letter-spacing="18">
+    <tspan fill="#FF6B35">T</tspan><tspan fill="#FFD700">I</tspan><tspan fill="#00C4FF">L</tspan><tspan fill="#00FFB3">T</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="66" y="258" font-family="Arial,'Helvetica Neue',sans-serif"
+        font-weight="600" font-size="18" fill="#3A7AB5" letter-spacing="6">THE MAZE PUZZLE</text>
+
+  <!-- Divider line -->
+  <line x1="66" y1="282" x2="360" y2="282" stroke="#1A3A5C" stroke-width="1.5"/>
+
+  <!-- Feature bullets -->
+  <!-- Bullet 1 -->
+  <circle cx="76" cy="316" r="4" fill="#00FFB3"/>
+  <text x="92" y="321" font-family="Arial,sans-serif" font-size="15" fill="#8AB5D5" font-weight="500">Tilt your device — no touch required</text>
+
+  <!-- Bullet 2 -->
+  <circle cx="76" cy="348" r="4" fill="#00C4FF"/>
+  <text x="92" y="353" font-family="Arial,sans-serif" font-size="15" fill="#8AB5D5" font-weight="500">Audio &amp; haptic guidance for everyone</text>
+
+  <!-- Bullet 3 -->
+  <circle cx="76" cy="380" r="4" fill="#FFD700"/>
+  <text x="92" y="385" font-family="Arial,sans-serif" font-size="15" fill="#8AB5D5" font-weight="500">Live global leaderboard · A1–C3 grid</text>
+
+  <!-- Divider between panels -->
+  <line x1="570" y1="0" x2="570" y2="500" stroke="url(#divider)" stroke-width="1.5"/>
+
+  <!-- ═══════════════════════════════════════
+       Right panel: 3×3 Grid mockup
+       Cell = 94px, Gap = 6px, Total = 294px
+       Center of right panel: x=(570+1024)/2 = 797, y=250
+       Grid start: x=797-147=650, y=250-147=103
+       Cols: 650 | 750 | 850
+       Rows: 103 | 203 | 303
+  ═══════════════════════════════════════ -->
+
+  <!-- Row 0: A1, B1, C1 (C1=target) -->
+  <rect x="650" y="103" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <rect x="750" y="103" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <!-- C1 target -->
+  <rect x="850" y="103" width="94" height="94" fill="rgba(0,255,136,0.07)" stroke="#00FF88" stroke-width="2" rx="6"/>
+
+  <!-- Row 1: A2, B2 (player), C2 -->
+  <rect x="650" y="203" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <rect x="750" y="203" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <rect x="850" y="203" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+
+  <!-- Row 2: A3, B3, C3 -->
+  <rect x="650" y="303" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <rect x="750" y="303" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+  <rect x="850" y="303" width="94" height="94" fill="#0A1929" stroke="#1A3A5C" stroke-width="1.5" rx="6"/>
+
+  <!-- Target C1 corner brackets (x=850, y=103, w=94, h=94) -->
+  <rect x="849" y="102" width="22" height="3"  fill="#00FF88" filter="url(#glow)"/>
+  <rect x="849" y="102" width="3"  height="22" fill="#00FF88" filter="url(#glow)"/>
+  <rect x="923" y="102" width="22" height="3"  fill="#00FF88" filter="url(#glow)"/>
+  <rect x="942" y="102" width="3"  height="22" fill="#00FF88" filter="url(#glow)"/>
+  <rect x="849" y="194" width="22" height="3"  fill="#00FF88" filter="url(#glow)"/>
+  <rect x="849" y="172" width="3"  height="22" fill="#00FF88" filter="url(#glow)"/>
+  <rect x="923" y="194" width="22" height="3"  fill="#00FF88" filter="url(#glow)"/>
+  <rect x="942" y="172" width="3"  height="22" fill="#00FF88" filter="url(#glow)"/>
+
+  <!-- Coord labels -->
+  <text x="656" y="117"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">A1</text>
+  <text x="756" y="117"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">B1</text>
+  <text x="856" y="117"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(0,255,136,0.7)">C1</text>
+  <text x="656" y="217"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">A2</text>
+  <text x="756" y="217"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(0,255,136,0.7)">B2</text>
+  <text x="856" y="217"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">C2</text>
+  <text x="656" y="317"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">A3</text>
+  <text x="756" y="317"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">B3</text>
+  <text x="856" y="317"  font-family="'Courier New',monospace" font-size="12" font-weight="700" fill="rgba(58,122,181,0.45)">C3</text>
+
+  <!-- Player at B2 center (797, 250) -->
+  <rect x="757" y="209" width="80" height="80" rx="6" fill="#00FF88" opacity="0.08" filter="url(#glow-xl)"/>
+  <rect x="759" y="211" width="76" height="76" rx="5"
+        fill="rgba(0,255,136,0.12)" stroke="#00FF88" stroke-width="2.5" filter="url(#glow)"/>
+  <rect x="774" y="226" width="46" height="46" rx="6" fill="#00FF88"/>
+  <rect x="782" y="234" width="30" height="30" rx="4" fill="#0A1929"/>
+  <rect x="789" y="241" width="16" height="16" rx="2" fill="#00FF88"/>
+
+  <!-- Arrow indicator B2→C1 -->
+  <polyline points="840,240 852,228 840,216" fill="none" stroke="#00FF88" stroke-width="2"
+            opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="852,240 864,228 852,216" fill="none" stroke="#00FF88" stroke-width="2"
+            opacity="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Coordinate HUD below grid -->
+  <rect x="650" y="413" width="294" height="42" fill="#0A1929" stroke="#1A3A5C" stroke-width="1" rx="5"/>
+  <text x="693" y="440" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="#5A8AB5" text-anchor="middle">NOW</text>
+  <text x="693" y="452" font-family="'Courier New',monospace" font-size="18" font-weight="700" fill="#5A8AB5" text-anchor="middle" dy="-4">B2</text>
+  <text x="797" y="440" font-family="Arial,sans-serif" font-size="12" fill="#1A5F8A" text-anchor="middle">→</text>
+  <text x="901" y="434" font-family="'Courier New',monospace" font-size="14" font-weight="700" fill="rgba(0,255,136,0.7)" text-anchor="middle">TARGET</text>
+  <text x="901" y="448" font-family="'Courier New',monospace" font-size="18" font-weight="700" fill="#00FFB3" text-anchor="middle">C1</text>
+</svg>

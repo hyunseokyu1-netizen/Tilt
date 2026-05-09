@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<!--
+  TILT Screenshot 2 — Gameplay
+  Open in Chrome → DevTools → Device: 390×844 → Capture screenshot
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>TILT — Gameplay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    background: #0B1622;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .status-bar {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px 0;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 10;
+  }
+  .header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    z-index: 10;
+  }
+  .stat-box { display: flex; flex-direction: column; align-items: center; min-width: 72px; }
+  .stat-label { color: #3A7AB5; font-size: 10px; font-weight: 600; letter-spacing: 2px; }
+  .stat-value { color: #FFD700; font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .title-wrap { display: flex; flex-direction: column; align-items: center; }
+  .title-row { display: flex; gap: 4px; }
+  .title-char { font-size: 26px; font-weight: 700; letter-spacing: 6px; }
+  .title-sub { color: #3A7AB5; font-size: 9px; font-weight: 500; letter-spacing: 4px; margin-top: 2px; }
+
+  /* Timer bar */
+  .timer-wrap { width: 100%; padding: 0 0 12px; }
+  .timer-track { width: 100%; height: 4px; background: #0A1929; }
+  .timer-fill { height: 100%; background: linear-gradient(90deg, #00C4FF, #00FFB3); box-shadow: 0 0 8px rgba(0,255,179,0.5); }
+
+  /* Grid area */
+  .grid-area { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 94px);
+    grid-template-rows: repeat(3, 94px);
+    gap: 6px;
+  }
+  .cell {
+    width: 94px; height: 94px;
+    background: #0A1929;
+    border: 1px solid #1A3A5C;
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .coord-lbl {
+    position: absolute;
+    top: 5px; left: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(58,122,181,0.4);
+    font-family: monospace;
+    letter-spacing: 0.5px;
+  }
+  .coord-lbl.active { color: rgba(0,255,136,0.7); }
+
+  /* Target cell */
+  .cell.target { background: rgba(0,255,136,0.05); border-color: #00FF88; border-width: 2px; }
+  .corner { position: absolute; }
+  .tl-h { top:-1px; left:-1px; width:18px; height:3px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .tl-v { top:-1px; left:-1px; width:3px; height:18px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .tr-h { top:-1px; right:-1px; width:18px; height:3px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .tr-v { top:-1px; right:-1px; width:3px; height:18px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .bl-h { bottom:-1px; left:-1px; width:18px; height:3px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .bl-v { bottom:-1px; left:-1px; width:3px; height:18px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .br-h { bottom:-1px; right:-1px; width:18px; height:3px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+  .br-v { bottom:-1px; right:-1px; width:3px; height:18px; background:#00FF88; box-shadow:0 0 6px #00FF88; }
+
+  /* Player */
+  .player-wrap {
+    width: 36px; height: 36px;
+    background: rgba(0,255,136,0.15);
+    border: 2.5px solid #00FF88;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 14px rgba(0,255,136,0.5);
+  }
+  .player-core { width: 16px; height: 16px; background: #00FF88; border-radius: 3px; }
+
+  /* Coordinate bar */
+  .coord-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .coord-item { display: flex; flex-direction: column; align-items: center; }
+  .coord-item-label { color: #1A5F8A; font-size: 9px; font-weight: 600; letter-spacing: 2px; }
+  .coord-item-value { color: #5A8AB5; font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .coord-item-value.target-c { color: #00FFB3; }
+
+  /* Bottom control */
+  .bottom-row { padding: 8px 0 28px; }
+  .ctrl-btn {
+    border: 1px solid #1A3A5C;
+    border-radius: 4px;
+    padding: 10px 20px;
+    background: none;
+    color: #3A7AB5;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  /* BG decoration */
+  .bg-svg { position:absolute; inset:0; pointer-events:none; opacity:0.18; }
+</style>
+</head>
+<body>
+
+<svg class="bg-svg" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+  <line x1="0" y1="250" x2="390" y2="250" stroke="#1A3A5C" stroke-width="1"/>
+  <line x1="0" y1="500" x2="390" y2="500" stroke="#1A3A5C" stroke-width="1"/>
+  <line x1="130" y1="0" x2="130" y2="844" stroke="#1A3A5C" stroke-width="1"/>
+  <line x1="260" y1="0" x2="260" y2="844" stroke="#1A3A5C" stroke-width="1"/>
+</svg>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span>9:41</span>
+  <svg width="60" height="14" viewBox="0 0 60 14">
+    <rect x="0"  y="4" width="6"  height="10" rx="1" fill="#fff" opacity="0.4"/>
+    <rect x="9"  y="2" width="6"  height="12" rx="1" fill="#fff" opacity="0.6"/>
+    <rect x="18" y="0" width="6"  height="14" rx="1" fill="#fff" opacity="0.8"/>
+    <rect x="27" y="0" width="6"  height="14" rx="1" fill="#fff"/>
+    <rect x="40" y="3" width="18" height="8"  rx="2" fill="none" stroke="#fff" stroke-width="1.2"/>
+    <rect x="58" y="5" width="2"  height="4"  rx="1" fill="#fff"/>
+    <rect x="41.5" y="4.5" width="12" height="5" rx="1" fill="#fff"/>
+  </svg>
+</div>
+
+<!-- Header: LEVEL | TILT | SCORE -->
+<div class="header">
+  <div class="stat-box">
+    <div class="stat-label">LEVEL</div>
+    <div class="stat-value">5</div>
+  </div>
+  <div class="title-wrap">
+    <div class="title-row">
+      <span class="title-char" style="color:#FF6B35">T</span>
+      <span class="title-char" style="color:#FFD700">I</span>
+      <span class="title-char" style="color:#00C4FF">L</span>
+      <span class="title-char" style="color:#00FFB3">T</span>
+    </div>
+    <div class="title-sub">THE MAZE PUZZLE</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">SCORE</div>
+    <div class="stat-value">4</div>
+  </div>
+</div>
+
+<!-- Timer bar (70% remaining) -->
+<div class="timer-wrap">
+  <div class="timer-track">
+    <div class="timer-fill" style="width:70%"></div>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="grid-area">
+  <div class="grid">
+    <!-- Row 0: A1, B1 (target), C1 -->
+    <div class="cell">
+      <span class="coord-lbl">A1</span>
+    </div>
+    <div class="cell target">
+      <span class="coord-lbl active">B1</span>
+      <div class="corner tl-h"></div>
+      <div class="corner tl-v"></div>
+      <div class="corner tr-h"></div>
+      <div class="corner tr-v"></div>
+      <div class="corner bl-h"></div>
+      <div class="corner bl-v"></div>
+      <div class="corner br-h"></div>
+      <div class="corner br-v"></div>
+    </div>
+    <div class="cell">
+      <span class="coord-lbl">C1</span>
+    </div>
+
+    <!-- Row 1: A2, B2 (player), C2 -->
+    <div class="cell">
+      <span class="coord-lbl">A2</span>
+    </div>
+    <div class="cell">
+      <span class="coord-lbl active">B2</span>
+      <div class="player-wrap">
+        <div class="player-core"></div>
+      </div>
+    </div>
+    <div class="cell">
+      <span class="coord-lbl">C2</span>
+    </div>
+
+    <!-- Row 2: A3, B3, C3 -->
+    <div class="cell">
+      <span class="coord-lbl">A3</span>
+    </div>
+    <div class="cell">
+      <span class="coord-lbl">B3</span>
+    </div>
+    <div class="cell">
+      <span class="coord-lbl">C3</span>
+    </div>
+  </div>
+</div>
+
+<!-- Coordinate bar -->
+<div class="coord-bar">
+  <div class="coord-item">
+    <div class="coord-item-label">NOW</div>
+    <div class="coord-item-value">B2</div>
+  </div>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A5F8A" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+  <div class="coord-item">
+    <div class="coord-item-label">TARGET</div>
+    <div class="coord-item-value target-c">B1</div>
+  </div>
+</div>
+
+<!-- Bottom control -->
+<div class="bottom-row">
+  <button class="ctrl-btn">RESTART LEVEL</button>
+</div>
+
+<!-- Home indicator -->
+<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:5px;background:#fff;opacity:0.25;border-radius:3px;"></div>
+
+</body>
+</html>
