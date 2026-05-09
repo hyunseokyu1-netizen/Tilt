@@ -16,11 +16,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hyunseokyu.tilt"
+      "bundleIdentifier": "com.backdev.tilt"
     },
     "android": {
       "backgroundColor": "#0B1622",
-      "package": "com.hyunseokyu.tilt"
+      "package": "com.backdev.tilt"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
