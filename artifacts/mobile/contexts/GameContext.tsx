@@ -43,6 +43,7 @@ export interface RankingEntry {
 }
 
 const HIGH_SCORE_KEY = "@tilt_high_score";
+const TTS_ENABLED_KEY = "@tilt_tts_enabled";
 
 export interface GameContextType {
   phase: Phase;
@@ -61,6 +62,8 @@ export interface GameContextType {
   rankInfo: RankInfo | null;
   topRankings: RankingEntry[];
   isSubmittingRank: boolean;
+  ttsEnabled: boolean;
+  setTtsEnabled: (enabled: boolean) => void;
   startGame: () => void;
   restartGame: () => void;
   goToMenu: () => void;
@@ -123,6 +126,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
   const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
+  const [ttsEnabled, setTtsEnabledState] = useState(true);
 
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -140,12 +144,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (Number.isFinite(parsed) && parsed > 0) setHighScore(parsed);
       }
     });
+    AsyncStorage.getItem(TTS_ENABLED_KEY).then((val) => {
+      if (val === "false") setTtsEnabledState(false);
+    });
   }, []);
 
   useEffect(() => {
     return () => {
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
+  }, []);
+
+  const ttsEnabledRef = useRef(ttsEnabled);
+  ttsEnabledRef.current = ttsEnabled;
+
+  const setTtsEnabled = useCallback((enabled: boolean) => {
+    setTtsEnabledState(enabled);
+    AsyncStorage.setItem(TTS_ENABLED_KEY, String(enabled));
+    if (!enabled) Speech.stop();
   }, []);
 
   const phaseRef = useRef(phase);
@@ -243,8 +259,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     roundRef.current = newRound;
     maxTimeRef.current = newMaxTime;
     nextMetronomeTickRef.current = 0;
-    // Announce new position after reaching target
-    speakPosition(playerRef.current, newTarget);
+    if (ttsEnabledRef.current) speakPosition(playerRef.current, newTarget);
   }, [clearPlayer]);
 
   const movePlayer = useCallback(
@@ -292,8 +307,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     roundRef.current = 0;
     maxTimeRef.current = INITIAL_MAX_TIME;
     nextMetronomeTickRef.current = 0;
-    // Announce starting position
-    speakPosition(4, target);
+    if (ttsEnabledRef.current) speakPosition(4, target);
   }, []);
 
   const restartGame = useCallback(() => {
@@ -418,6 +432,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         rankInfo,
         topRankings,
         isSubmittingRank,
+        ttsEnabled,
+        setTtsEnabled,
         startGame,
         restartGame,
         goToMenu,

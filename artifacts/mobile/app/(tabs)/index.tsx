@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -130,7 +131,7 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
 }
 
 function IdleOverlay() {
-  const { startGame, highScore } = useGame();
+  const { startGame, highScore, ttsEnabled, setTtsEnabled } = useGame();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   if (showLeaderboard) {
@@ -175,6 +176,22 @@ function IdleOverlay() {
           <Feather name="list" size={14} color="#3A7AB5" />
           <Text style={overlayStyles.btnSecondaryText}>LEADERBOARD</Text>
         </Pressable>
+
+        {/* TTS toggle */}
+        <View style={overlayStyles.ttsRow}>
+          <Feather
+            name="volume-2"
+            size={14}
+            color={ttsEnabled ? "#00FFB3" : "#3A7AB5"}
+          />
+          <Text style={overlayStyles.ttsLabel}>위치 음성 안내</Text>
+          <Switch
+            value={ttsEnabled}
+            onValueChange={setTtsEnabled}
+            trackColor={{ false: "#1A3A5C", true: "rgba(0,255,179,0.35)" }}
+            thumbColor={ttsEnabled ? "#00FFB3" : "#3A7AB5"}
+          />
+        </View>
       </View>
     </View>
   );
@@ -772,6 +789,24 @@ const overlayStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     marginTop: 24,
+  },
+  ttsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#1A3A5C",
+    borderRadius: 8,
+  },
+  ttsLabel: {
+    flex: 1,
+    color: "#5A8AB5",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.5,
   },
   coordHintRow: {
     marginBottom: 16,
