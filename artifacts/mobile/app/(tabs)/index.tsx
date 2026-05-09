@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -12,6 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import type { RankingEntry } from "@/contexts/GameContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CircuitLines } from "@/components/CircuitLines";
@@ -75,8 +78,64 @@ function ColorTitle() {
   );
 }
 
+function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
+  const [entries, setEntries] = useState<RankingEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (!isSupabaseConfigured || !supabase) {
+        setLoading(false);
+        return;
+      }
+      const { data } = await supabase
+        .from("rankings")
+        .select("player_name, score")
+        .order("score", { ascending: false })
+        .limit(10);
+      setEntries(data ?? []);
+      setLoading(false);
+    })();
+  }, []);
+
+  return (
+    <View style={overlayStyles.container}>
+      <View style={overlayStyles.leaderboardPanel}>
+        <View style={overlayStyles.panelHeader}>
+          <Text style={overlayStyles.panelTitle}>LEADERBOARD</Text>
+          <Pressable onPress={onClose} hitSlop={12}>
+            <Feather name="x" size={22} color="#3A7AB5" />
+          </Pressable>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#3A7AB5" style={{ marginTop: 32 }} />
+        ) : entries.length === 0 ? (
+          <Text style={overlayStyles.emptyText}>아직 기록이 없습니다</Text>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} style={{ width: "100%" }}>
+            {entries.map((entry, i) => (
+              <LeaderboardRow
+                key={i}
+                rank={i + 1}
+                name={entry.player_name}
+                score={entry.score}
+              />
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function IdleOverlay() {
   const { startGame, highScore } = useGame();
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  if (showLeaderboard) {
+    return <LeaderboardOverlay onClose={() => setShowLeaderboard(false)} />;
+  }
   return (
     <View style={overlayStyles.container}>
       <View style={overlayStyles.box}>
@@ -108,6 +167,13 @@ function IdleOverlay() {
         </View>
         <Pressable style={overlayStyles.btn} onPress={startGame}>
           <Text style={overlayStyles.btnText}>START GAME</Text>
+        </Pressable>
+        <Pressable
+          style={overlayStyles.btnSecondary}
+          onPress={() => setShowLeaderboard(true)}
+        >
+          <Feather name="list" size={14} color="#3A7AB5" />
+          <Text style={overlayStyles.btnSecondaryText}>LEADERBOARD</Text>
         </Pressable>
       </View>
     </View>
@@ -147,6 +213,7 @@ function GameOverOverlay() {
   const {
     score,
     restartGame,
+    goToMenu,
     isNewBest,
     rankInfo,
     topRankings,
@@ -290,6 +357,10 @@ function GameOverOverlay() {
 
         <Pressable style={overlayStyles.btn} onPress={restartGame}>
           <Text style={overlayStyles.btnText}>PLAY AGAIN</Text>
+        </Pressable>
+        <Pressable style={overlayStyles.btnSecondary} onPress={goToMenu}>
+          <Feather name="home" size={14} color="#3A7AB5" />
+          <Text style={overlayStyles.btnSecondaryText}>MAIN MENU</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -654,6 +725,53 @@ const overlayStyles = StyleSheet.create({
     color: "#FFD700",
     fontSize: 28,
     fontFamily: "Inter_700Bold",
+  },
+  btnSecondary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#1A3A5C",
+    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  btnSecondaryText: {
+    color: "#3A7AB5",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 2,
+  },
+  leaderboardPanel: {
+    backgroundColor: "#0A1929",
+    borderWidth: 1,
+    borderColor: "#1A3A5C",
+    borderRadius: 12,
+    padding: 24,
+    width: SW - 48,
+    maxWidth: 380,
+    maxHeight: "80%",
+    alignItems: "center",
+  },
+  panelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: 16,
+  },
+  panelTitle: {
+    color: "#3A7AB5",
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 4,
+  },
+  emptyText: {
+    color: "#3A7AB5",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    marginTop: 24,
   },
   coordHintRow: {
     marginBottom: 16,

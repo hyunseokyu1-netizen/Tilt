@@ -63,6 +63,7 @@ export interface GameContextType {
   isSubmittingRank: boolean;
   startGame: () => void;
   restartGame: () => void;
+  goToMenu: () => void;
   movePlayer: (dir: "up" | "down" | "left" | "right") => void;
   submitScore: (name: string) => Promise<void>;
 }
@@ -300,6 +301,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     startGame();
   }, [startGame]);
 
+  const goToMenu = useCallback(() => {
+    Speech.stop();
+    setPhase("idle");
+    setScore(0);
+    setRound(0);
+    setTimeLeft(INITIAL_MAX_TIME);
+    setMaxTime(INITIAL_MAX_TIME);
+    setIsNewBest(false);
+    setRankInfo(null);
+    setTopRankings([]);
+    if (flashTimerRef.current) {
+      clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = null;
+    }
+  }, []);
+
   // Timer + metronome
   useEffect(() => {
     if (phase !== "playing") return;
@@ -403,6 +420,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         isSubmittingRank,
         startGame,
         restartGame,
+        goToMenu,
         movePlayer,
         submitScore,
       }}
