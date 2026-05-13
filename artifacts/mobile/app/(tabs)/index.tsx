@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -22,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CircuitLines } from "@/components/CircuitLines";
 import { Grid } from "@/components/Grid";
 import { TimerBar } from "@/components/TimerBar";
+import { TutorialOverlay, TUTORIAL_KEY } from "@/components/TutorialOverlay";
 import { useGame } from "@/contexts/GameContext";
 
 const { width: SW } = Dimensions.get("window");
@@ -489,6 +491,14 @@ export default function GameScreen() {
     restartGame,
   } = useGame();
 
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(TUTORIAL_KEY).then((val) => {
+      if (val !== "true") setShowTutorial(true);
+    });
+  }, []);
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -555,6 +565,9 @@ export default function GameScreen() {
       {/* Overlays */}
       {phase === "idle" && <IdleOverlay />}
       {phase === "gameover" && <GameOverOverlay />}
+      {showTutorial && phase === "idle" && (
+        <TutorialOverlay onDone={() => setShowTutorial(false)} />
+      )}
     </View>
   );
 }
