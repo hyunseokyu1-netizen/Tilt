@@ -13,3 +13,5 @@ web-build/
 *.key
 *.mobileprovision
 static-build/
+store/v1.0/
+store/v2.0/
