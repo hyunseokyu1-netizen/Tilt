@@ -74,7 +74,7 @@ function Step1Grid() {
 }
 
 // Step 2: 타이머 바 + 그리드
-function Step2Timer() {
+function Step2Timer({ isKo }: { isKo: boolean }) {
   const anim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -122,7 +122,7 @@ function Step2Timer() {
           style={[t.fill, { width: barWidth, backgroundColor: barColor }]}
         />
       </View>
-      <Text style={t.hint}>시간이 줄어듭니다</Text>
+      <Text style={t.hint}>{isKo ? "시간이 줄어듭니다" : "Timer gets shorter"}</Text>
     </View>
   );
 }
@@ -192,7 +192,7 @@ const STEPS_KO = [
   {
     title: "목표 칸에 도달",
     desc: "빛나는 칸에 시간 안에 도달하세요\n성공할수록 타이머가 점점 빨라집니다",
-    content: () => <Step2Timer />,
+    content: () => <Step2Timer isKo />,
   },
   {
     title: "음성 안내 지원",
@@ -210,7 +210,7 @@ const STEPS_EN = [
   {
     title: "Reach the Target",
     desc: "Get to the glowing cell before time runs out\nEach success makes the timer shorter",
-    content: () => <Step2Timer />,
+    content: () => <Step2Timer isKo={false} />,
   },
   {
     title: "Audio Guided",
