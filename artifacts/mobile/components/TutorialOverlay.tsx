@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
+import { getLocales } from "expo-localization";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -127,7 +128,7 @@ function Step2Timer() {
 }
 
 // Step 3: 음성 안내
-function Step3Audio() {
+function Step3Audio({ isKo }: { isKo: boolean }) {
   const pulse = useRef(new Animated.Value(1)).current;
   const wave1 = useRef(new Animated.Value(0)).current;
   const wave2 = useRef(new Animated.Value(0)).current;
@@ -169,7 +170,9 @@ function Step3Audio() {
         </View>
       </View>
       <View style={a.callout}>
-        <Text style={a.calloutText}>"B2에서 C1로"</Text>
+        <Text style={a.calloutText}>
+          {isKo ? '"B2에서 C1로"' : '"B2 to C1"'}
+        </Text>
       </View>
       <Text style={a.coordRow}>
         <Text style={a.coordChip}>B2</Text>
@@ -180,7 +183,7 @@ function Step3Audio() {
   );
 }
 
-const STEPS = [
+const STEPS_KO = [
   {
     title: "기울여서 이동",
     desc: "스마트폰을 기울이면 마커가 이동합니다\n웹에서는 방향키로 조작할 수 있어요",
@@ -194,13 +197,42 @@ const STEPS = [
   {
     title: "음성 안내 지원",
     desc: "화면을 보지 않고도 플레이 가능합니다\n매 라운드 현재 위치와 목표를 안내해요",
-    content: () => <Step3Audio />,
+    content: () => <Step3Audio isKo />,
   },
 ];
+
+const STEPS_EN = [
+  {
+    title: "Tilt to Move",
+    desc: "Tilt your phone to move the marker\nUse arrow keys on web",
+    content: () => <Step1Grid />,
+  },
+  {
+    title: "Reach the Target",
+    desc: "Get to the glowing cell before time runs out\nEach success makes the timer shorter",
+    content: () => <Step2Timer />,
+  },
+  {
+    title: "Audio Guided",
+    desc: "Play without looking at the screen\nEach round announces your position and target",
+    content: () => <Step3Audio isKo={false} />,
+  },
+];
+
+function isKorean(): boolean {
+  try {
+    const locale = getLocales()[0]?.languageCode ?? "";
+    return locale === "ko";
+  } catch {
+    return false;
+  }
+}
 
 export function TutorialOverlay({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
   const opacity = useRef(new Animated.Value(1)).current;
+  const ko = isKorean();
+  const STEPS = ko ? STEPS_KO : STEPS_EN;
 
   const transition = useCallback(
     (next: number) => {
@@ -239,10 +271,10 @@ export function TutorialOverlay({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={styles.container}>
-      {/* 건너뛰기 */}
+      {/* 건너뛰기 / Skip */}
       {step < TOTAL_STEPS - 1 && (
         <Pressable style={styles.skipBtn} onPress={handleSkip} hitSlop={12}>
-          <Text style={styles.skipText}>건너뛰기</Text>
+          <Text style={styles.skipText}>{ko ? "건너뛰기" : "Skip"}</Text>
         </Pressable>
       )}
 
@@ -264,7 +296,9 @@ export function TutorialOverlay({ onDone }: { onDone: () => void }) {
       {/* 버튼 */}
       <Pressable style={styles.btn} onPress={handleNext}>
         <Text style={styles.btnText}>
-          {step < TOTAL_STEPS - 1 ? "다음" : "시작하기"}
+          {step < TOTAL_STEPS - 1
+            ? ko ? "다음" : "Next"
+            : ko ? "시작하기" : "Let's Go"}
         </Text>
       </Pressable>
     </View>
