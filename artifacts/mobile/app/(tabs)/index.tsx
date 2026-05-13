@@ -146,12 +146,24 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
 function IdleOverlay() {
   const { startGame, highScore, ttsEnabled, setTtsEnabled } = useGame();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   if (showLeaderboard) {
     return <LeaderboardOverlay onClose={() => setShowLeaderboard(false)} />;
   }
+  if (showTutorial) {
+    return <TutorialOverlay onDone={() => setShowTutorial(false)} />;
+  }
   return (
     <View style={overlayStyles.container}>
+      {/* 도움말 버튼 */}
+      <Pressable
+        style={overlayStyles.helpBtn}
+        onPress={() => setShowTutorial(true)}
+        hitSlop={12}
+      >
+        <Feather name="help-circle" size={22} color="#3A7AB5" />
+      </Pressable>
       <View style={overlayStyles.box}>
         <View style={overlayStyles.titleRow}>
           <Text style={[overlayStyles.titleChar, { color: "#FF6B35" }]}>T</Text>
@@ -891,6 +903,11 @@ const overlayStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     marginTop: 24,
+  },
+  helpBtn: {
+    position: "absolute",
+    top: 56,
+    right: 24,
   },
   ttsRow: {
     flexDirection: "row",
