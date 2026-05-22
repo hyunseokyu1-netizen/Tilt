@@ -164,9 +164,7 @@ function Cell({
               elevation: 6,
             },
           ]}
-        >
-          <View style={styles.playerInner} />
-        </Animated.View>
+        />
       )}
     </View>
   );
@@ -212,19 +210,9 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   player: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: PLAYER_COLOR,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,255,136,0.15)",
-  },
-  playerInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 5,
     backgroundColor: PLAYER_COLOR,
   },
   targetBorder: {
