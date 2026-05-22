@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   player: {
-    width: 28,
-    height: 28,
-    borderRadius: 5,
+    width: 32,
+    height: 32,
+    borderRadius: 6,
     backgroundColor: PLAYER_COLOR,
   },
   targetBorder: {
