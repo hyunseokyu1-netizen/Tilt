@@ -2,6 +2,19 @@
 
 ---
 
+## v3.0.0 (2026-05-22)
+
+### 수정
+- 플레이어 마커 스타일 변경 (튜토리얼 화면과 동일하게 통일)
+- 플레이어 마커 크기 조정 (28×28 → 32×32px)
+
+### 빌드
+- versionCode: 3
+- versionName: 3.0.0
+- AAB: `~/Documents/workspace/apk_build_files/tilt/v3.0/app-release.aab`
+
+---
+
 ## v2.0.0 (2026-05-13)
 
 ### 추가
