@@ -1,6 +1,6 @@
 # Privacy Policy — TILT: The Maze Puzzle
 
-**Last updated:** 2026-05-09
+**Last updated:** 2026-07-17
 
 ---
 
@@ -12,12 +12,7 @@ TILT: The Maze Puzzle ("the App") is developed and operated by Hyunseok Yu ("we"
 
 ### Information We Collect
 
-We collect the minimum information necessary to operate the global leaderboard:
-
-| Data | When collected | Purpose |
-|------|----------------|---------|
-| Player nickname | When you voluntarily submit a score | Display on global leaderboard |
-| Game score (integer) | When you voluntarily submit a score | Display on global leaderboard |
+The App does not collect, transmit, or store any information outside of your device. The leaderboard (nickname + score) is saved entirely on your device's local storage and is never sent to us or any third party.
 
 **We do NOT collect:**
 - Real name, email address, or any personally identifiable information
@@ -25,31 +20,21 @@ We collect the minimum information necessary to operate the global leaderboard:
 - Location data
 - Usage analytics or crash reports
 
-Submitting a score is entirely optional. You can play the full game without providing any data.
-
 ### How We Use Your Information
 
-The nickname and score you submit are used solely to:
-- Display your entry on the global leaderboard within the App
-- Calculate and display your ranking position
+The nickname and score you enter when saving a leaderboard entry are used solely to display your local high-score list within the App on your own device. This information never leaves your device.
 
 ### Data Storage
 
-Leaderboard data (nickname + score) is stored in a cloud database provided by [Supabase, Inc.](https://supabase.com). Supabase servers may be located in the United States. By submitting a score, you consent to your nickname and score being stored on Supabase's infrastructure.
-
-Supabase's privacy policy: https://supabase.com/privacy
+All game data, including your local leaderboard, is stored using your device's local app storage. Uninstalling the App or clearing its storage permanently deletes this data. We have no access to it and cannot recover it on your behalf.
 
 ### Data Retention and Deletion
 
-Leaderboard entries are retained until you request deletion. To request removal of your entry, contact us at the address below. We will process your request within 30 days.
+Since no data is transmitted to us, there is nothing for us to retain or delete. You can remove all locally stored data at any time by clearing the App's storage or uninstalling the App.
 
 ### Third-Party Services
 
-| Service | Purpose | Privacy Policy |
-|---------|---------|----------------|
-| Supabase | Leaderboard database | https://supabase.com/privacy |
-
-No advertising networks, analytics SDKs, or social media integrations are present in the App.
+The App does not use any third-party services, advertising networks, analytics SDKs, or social media integrations.
 
 ### Children's Privacy
 
@@ -74,12 +59,7 @@ TILT: 미로 퍼즐("앱")은 유현석("당사")이 개발 및 운영합니다.
 
 ### 수집하는 정보
 
-글로벌 리더보드 운영을 위해 최소한의 정보만 수집합니다:
-
-| 데이터 | 수집 시점 | 목적 |
-|--------|-----------|------|
-| 플레이어 닉네임 | 점수 제출 시 (선택 사항) | 글로벌 리더보드 표시 |
-| 게임 점수 (정수) | 점수 제출 시 (선택 사항) | 글로벌 리더보드 표시 |
+본 앱은 기기 외부로 어떠한 정보도 수집·전송·저장하지 않습니다. 리더보드(닉네임 + 점수)는 기기의 로컬 저장소에만 저장되며, 당사나 제3자에게 전송되지 않습니다.
 
 **수집하지 않는 정보:**
 - 실명, 이메일 주소 또는 개인 식별 정보
@@ -87,31 +67,21 @@ TILT: 미로 퍼즐("앱")은 유현석("당사")이 개발 및 운영합니다.
 - 위치 정보
 - 사용 분석 또는 오류 보고서
 
-점수 제출은 전적으로 선택 사항입니다. 아무 데이터도 제공하지 않고 전체 게임을 즐길 수 있습니다.
-
 ### 정보 이용 목적
 
-제출된 닉네임과 점수는 다음 목적으로만 사용됩니다:
-- 앱 내 글로벌 리더보드에 항목 표시
-- 순위 계산 및 표시
+리더보드 저장 시 입력한 닉네임과 점수는 오직 사용자 본인 기기에서 로컬 순위 목록을 표시하는 용도로만 사용됩니다. 이 정보는 기기 밖으로 전송되지 않습니다.
 
 ### 데이터 저장
 
-리더보드 데이터(닉네임 + 점수)는 [Supabase, Inc.](https://supabase.com)가 제공하는 클라우드 데이터베이스에 저장됩니다. Supabase 서버는 미국에 위치할 수 있습니다. 점수를 제출함으로써 닉네임과 점수가 Supabase 인프라에 저장되는 것에 동의하게 됩니다.
-
-Supabase 개인정보처리방침: https://supabase.com/privacy
+로컬 리더보드를 포함한 모든 게임 데이터는 기기의 앱 로컬 저장소에 저장됩니다. 앱을 삭제하거나 저장소를 초기화하면 이 데이터는 영구적으로 삭제되며, 당사는 이 데이터에 접근하거나 복구할 수 없습니다.
 
 ### 데이터 보관 및 삭제
 
-리더보드 항목은 삭제 요청 시까지 보관됩니다. 항목 삭제를 요청하려면 아래 주소로 연락해 주세요. 30일 이내에 처리됩니다.
+당사로 전송되는 데이터가 없으므로 당사가 보관하거나 삭제할 데이터도 없습니다. 앱의 저장소를 초기화하거나 앱을 삭제하면 언제든지 로컬에 저장된 모든 데이터를 제거할 수 있습니다.
 
 ### 제3자 서비스
 
-| 서비스 | 목적 | 개인정보처리방침 |
-|--------|------|-----------------|
-| Supabase | 리더보드 데이터베이스 | https://supabase.com/privacy |
-
-광고 네트워크, 분석 SDK, 소셜 미디어 연동은 앱에 포함되어 있지 않습니다.
+본 앱은 어떠한 제3자 서비스, 광고 네트워크, 분석 SDK, 소셜 미디어 연동도 사용하지 않습니다.
 
 ### 아동 개인정보 보호
 

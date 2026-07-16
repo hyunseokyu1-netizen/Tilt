@@ -2,6 +2,25 @@
 
 ---
 
+## v3.1.0 (2026-07-17)
+
+### 변경
+- 리더보드를 Supabase 기반 글로벌 리더보드에서 기기 로컬 리더보드로 전환
+  - Supabase 무료 요금제가 30일 미사용 시 프로젝트를 일시 정지시키는 문제 해소
+  - 점수·닉네임은 기기에만 저장되며 외부 서버로 전송되지 않음
+  - 인터넷 연결 없이도 순위 기록 및 열람 가능
+
+### 제거
+- Supabase 연동 및 `@supabase/supabase-js` 의존성 제거
+- 인터넷 권한 요구사항 제거 (앱 접근 권한: 가속도계만 필요)
+
+### 빌드
+- versionCode: 4
+- versionName: 3.1.0
+- AAB: `~/Documents/workspace/apk_build_files/tilt/v3.1/app-release.aab`
+
+---
+
 ## v3.0.0 (2026-05-22)
 
 ### 수정

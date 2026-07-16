@@ -15,8 +15,8 @@ import {
   View,
 } from "react-native";
 
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import type { RankingEntry } from "@/contexts/GameContext";
+import { getLocalRankings } from "@/utils/localRankings";
 import { applyRank } from "@/utils/ranking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -95,18 +95,8 @@ function LeaderboardOverlay({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     (async () => {
-      if (!isSupabaseConfigured || !supabase) {
-        setLoading(false);
-        return;
-      }
-      const { data } = await supabase
-        .from("rankings")
-        .select("player_name, score, total_play_time")
-        .order("score", { ascending: false })
-        .order("total_play_time", { ascending: true })
-        .order("created_at", { ascending: true })
-        .limit(10);
-      setEntries(applyRank(data ?? [], 0));
+      const records = await getLocalRankings();
+      setEntries(applyRank(records.slice(0, 10), 0));
       setLoading(false);
     })();
   }, []);
@@ -270,8 +260,6 @@ function GameOverOverlay() {
     isNewBest,
     rankInfo,
     topRankings,
-    nearbyRankings,
-    nearbyOffset,
     isLoadingRankings,
     isSubmittingRank,
     submitScore,
@@ -320,7 +308,7 @@ function GameOverOverlay() {
         {rankInfo?.qualifies && !submitted && (
           <View style={overlayStyles.inputBox}>
             <Text style={overlayStyles.rankText}>
-              GLOBAL RANK #{rankInfo.rank}
+              MY RANK #{rankInfo.rank}
             </Text>
             <Text style={overlayStyles.inputLabel}>Enter your name</Text>
             <TextInput
@@ -375,94 +363,18 @@ function GameOverOverlay() {
               );
             })}
 
-            {/* Nearby window (±3 around user) — position-based slice, ghost "me" row */}
-            {(() => {
-              if (nearbyRankings.length === 0) return null;
-
-              // Entries at positions nearbyOffset…nearbyOffset+6
-              // Top 5 occupies positions 0-4; slice out the overlap
-              const overlapCount = Math.max(0, 5 - nearbyOffset);
-              const filtered = nearbyRankings.slice(overlapCount);
-              if (filtered.length === 0) return null;
-
-              const firstPos = nearbyOffset + overlapCount; // 0-based global position
-              const showDots = firstPos > 4; // gap after top5
-
-              const rows: React.ReactNode[] = [];
-              let ghostInserted = submitted || !rankInfo;
-
-              for (let i = 0; i < filtered.length; i++) {
-                const entry = filtered[i];
-                // Inject ghost "me" row just before the first entry whose rank ≥ userRank
-                if (!ghostInserted && entry.rank >= rankInfo!.rank) {
-                  ghostInserted = true;
-                  rows.push(
-                    <LeaderboardRow
-                      key="me-ghost"
-                      rank={rankInfo!.rank}
-                      name="— (me)"
-                      score={score}
-                      highlight
-                    />
-                  );
-                }
-                const isMe =
-                  submitted &&
-                  entry.player_name === submittedName &&
-                  entry.score === score;
-                // Shift display rank by 1 for rows below the ghost (user pushes them down on submit)
-                const displayRank =
-                  !submitted && rankInfo && entry.rank >= rankInfo.rank
-                    ? entry.rank + 1
-                    : entry.rank;
-                rows.push(
-                  <LeaderboardRow
-                    key={`nearby-${entry.rank}`}
-                    rank={displayRank}
-                    name={isMe ? `${entry.player_name} ★` : entry.player_name}
-                    score={entry.score}
-                    totalPlayTime={entry.total_play_time}
-                    highlight={isMe}
-                  />
-                );
-              }
-
-              // Ghost at end if user falls after the last displayed entry
-              if (!ghostInserted) {
-                rows.push(
-                  <LeaderboardRow
-                    key="me-ghost"
-                    rank={rankInfo!.rank}
-                    name="— (me)"
-                    score={score}
-                    highlight
-                  />
-                );
-              }
-
-              return (
-                <>
-                  {showDots && <Text style={lbStyles.ellipsis}>· · ·</Text>}
-                  {rows}
-                </>
-              );
-            })()}
-
-            {/* Fallback: network error prevented nearby fetch */}
-            {rankInfo &&
-              rankInfo.rank > 5 &&
-              nearbyRankings.length === 0 &&
-              !submitted && (
-                <>
-                  <Text style={lbStyles.ellipsis}>· · ·</Text>
-                  <LeaderboardRow
-                    rank={rankInfo.rank}
-                    name="— (me)"
-                    score={score}
-                    highlight
-                  />
-                </>
-              )}
+            {/* Ghost "me" row when the current run falls outside the top 5 */}
+            {rankInfo && rankInfo.rank > topRankings.length && (
+              <>
+                <Text style={lbStyles.ellipsis}>· · ·</Text>
+                <LeaderboardRow
+                  rank={rankInfo.rank}
+                  name={submitted ? `${submittedName} ★` : "— (me)"}
+                  score={score}
+                  highlight
+                />
+              </>
+            )}
           </View>
         )}
 

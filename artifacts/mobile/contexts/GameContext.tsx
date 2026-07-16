@@ -13,8 +13,8 @@ import React, {
 } from "react";
 import { Platform } from "react-native";
 
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { indexToCoord } from "../utils/coords";
+import { addLocalRanking, computeRank, getLocalRankings } from "../utils/localRankings";
 import { applyRank } from "../utils/ranking";
 
 const TICK_SOUND = require("../assets/sounds/tick.wav");
@@ -64,8 +64,6 @@ export interface GameContextType {
   targetCoord: string;
   rankInfo: RankInfo | null;
   topRankings: RankingEntry[];
-  nearbyRankings: RankingEntry[];
-  nearbyOffset: number;
   isLoadingRankings: boolean;
   isSubmittingRank: boolean;
   ttsEnabled: boolean;
@@ -131,8 +129,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [flashIndex, setFlashIndex] = useState<number | null>(null);
   const [rankInfo, setRankInfo] = useState<RankInfo | null>(null);
   const [topRankings, setTopRankings] = useState<RankingEntry[]>([]);
-  const [nearbyRankings, setNearbyRankings] = useState<RankingEntry[]>([]);
-  const [nearbyOffset, setNearbyOffset] = useState(0);
   const [isLoadingRankings, setIsLoadingRankings] = useState(false);
   const [isSubmittingRank, setIsSubmittingRank] = useState(false);
   const [ttsEnabled, setTtsEnabledState] = useState(true);
@@ -194,64 +190,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   scoreRef.current = score;
 
   const fetchRankings = useCallback(async (finalScore: number, finalPlayTime: number) => {
-    if (!isSupabaseConfigured || !supabase) {
-      setIsLoadingRankings(false);
-      return;
-    }
     setIsLoadingRankings(true);
     try {
-      // Rows strictly above user: better score, OR same score with less-or-equal time
-      // (same score + same time = registered earlier → all count as "above" pre-submission)
-      const aboveFilter =
-        `score.gt.${finalScore},and(score.eq.${finalScore},total_play_time.lte.${finalPlayTime})`;
-
-      const [top5Result, higherResult] = await Promise.all([
-        supabase
-          .from("rankings")
-          .select("player_name, score, total_play_time")
-          .order("score", { ascending: false })
-          .order("total_play_time", { ascending: true })
-          .order("created_at", { ascending: true })
-          .limit(5),
-        // Use head:true to get count only — avoids fetching all rows
-        supabase
-          .from("rankings")
-          .select("*", { count: "exact", head: true })
-          .or(aboveFilter),
-      ]);
-
-      // Sequential rank: every row has its own rank number
-      const totalAbove = higherResult.count ?? 0;
-      const userRank = totalAbove + 1;
-      setRankInfo({ rank: userRank, qualifies: totalAbove < 1000 });
-
-      setTopRankings(applyRank(top5Result.data ?? [], 0));
-
-      if (totalAbove >= 5) {
-        const offset = Math.max(0, totalAbove - 3);
-        const { data } = await supabase
-          .from("rankings")
-          .select("player_name, score, total_play_time")
-          .order("score", { ascending: false })
-          .order("total_play_time", { ascending: true })
-          .order("created_at", { ascending: true })
-          .range(offset, offset + 6);
-
-        setNearbyOffset(offset);
-        // Each entry's global rank = offset + index + 1
-        setNearbyRankings(applyRank(data ?? [], offset));
-      } else {
-        setNearbyOffset(0);
-        setNearbyRankings([]);
-      }
-    } catch {
-      // ranking fetch is non-critical
+      const records = await getLocalRankings();
+      const rank = computeRank(records, finalScore, finalPlayTime);
+      setRankInfo({ rank, qualifies: true });
+      setTopRankings(applyRank(records.slice(0, 5), 0));
     } finally {
       setIsLoadingRankings(false);
     }
   }, []);
 
-  // Fetch global rank + top 5 when game over
+  // Fetch local rank + top 5 when game over
   useEffect(() => {
     if (phase !== "gameover") return;
     setRankInfo(null);
@@ -267,19 +217,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [phase, fetchRankings]);
 
   const submitScore = useCallback(async (name: string) => {
-    if (!isSupabaseConfigured || !supabase) return;
     setIsSubmittingRank(true);
     try {
-      await supabase.from("rankings").insert({
+      const records = await addLocalRanking({
         player_name: name.trim(),
         score: scoreRef.current,
         total_play_time: totalPlayTimeRef.current,
       });
-      await fetchRankings(scoreRef.current, totalPlayTimeRef.current);
+      const rank = computeRank(records, scoreRef.current, totalPlayTimeRef.current);
+      setRankInfo({ rank, qualifies: true });
+      setTopRankings(applyRank(records.slice(0, 5), 0));
     } finally {
       setIsSubmittingRank(false);
     }
-  }, [fetchRankings]);
+  }, []);
 
   const handleReach = useCallback(() => {
     // Accumulate time spent on this round (only successful rounds count)
@@ -349,8 +300,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setFlashIndex(null);
     setRankInfo(null);
     setTopRankings([]);
-    setNearbyRankings([]);
-    setNearbyOffset(0);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -380,7 +329,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setIsNewBest(false);
     setRankInfo(null);
     setTopRankings([]);
-    setNearbyRankings([]);
     if (flashTimerRef.current) {
       clearTimeout(flashTimerRef.current);
       flashTimerRef.current = null;
@@ -487,8 +435,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         targetCoord,
         rankInfo,
         topRankings,
-        nearbyRankings,
-        nearbyOffset,
         isLoadingRankings,
         isSubmittingRank,
         ttsEnabled,

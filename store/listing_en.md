@@ -4,7 +4,7 @@
 TILT: The Maze Puzzle
 
 ## Short Description (80 chars max)
-Tilt your phone to navigate a 3×3 grid. Race the clock. Top the global leaderboard!
+Tilt your phone to navigate a 3×3 grid. Race the clock. Beat your best score!
 
 ## Full Description (4000 chars max)
 
@@ -24,10 +24,10 @@ TILT is fully playable without looking at the screen:
 • Full haptic feedback for moves, wall collisions, and round completions
 • Toggle Audio Guidance on or off — play your way
 
-🏆 COMPETE GLOBALLY
-• Submit your score and appear on the live global leaderboard
-• Every player gets a unique sequential rank — score, then time, then order of entry
-• See your exact rank and the players directly around you (±3 rows)
+🏆 CHASE YOUR BEST
+• Save your name and score to your own local leaderboard after every run
+• Unique sequential rank — score, then time, then order of entry
+• Your best scores are stored safely on your device — no account or internet required
 
 📍 THE COORDINATE SYSTEM
 Every cell carries a unique label — A1 through C3. Audio cues call out your position and target before each round, so TILT is fully accessible without any visual feedback at all.
@@ -47,4 +47,3 @@ Everyone
 
 ## Permissions Required
 - Accelerometer / Motion Sensors (gameplay)
-- Internet (global leaderboard, optional)
